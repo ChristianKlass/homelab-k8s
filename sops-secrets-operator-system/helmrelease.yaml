@@ -1,0 +1,27 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: sops-secrets-operator
+  namespace: sops-secrets-operator-system
+spec:
+  interval: 30m
+  releaseName: sops-secrets-operator
+  chart:
+    spec:
+      chart: sops-secrets-operator
+      version: "0.25.4"
+      sourceRef:
+        kind: HelmRepository
+        name: sops-secrets-operator
+        namespace: sops-secrets-operator-system
+      interval: 1h
+  values:
+    extraEnv:
+      - name: SOPS_AGE_KEY_FILE
+        value: /etc/sops/age/keys.txt
+    secretsAsFiles:
+      # `sops-age` is a plain Secret holding the age private key — managed
+      # out-of-band, NOT in git, excluded from Flux prune.
+      - mountPath: /etc/sops/age
+        name: sops-age
+        secretName: sops-age

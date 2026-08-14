@@ -1,0 +1,11 @@
+# Longhorn backup target -> Unraid NAS NFS export (zero marginal cost, off-node).
+# Isolated in the longhorn/ subdir of the k8s_volumes export.
+# NFS (no credentials needed). Longhorn mounts NFSv4.x; verified v4.2 works.
+apiVersion: longhorn.io/v1beta2
+kind: BackupTarget
+metadata:
+  name: default
+  namespace: longhorn-system
+spec:
+  backupTargetURL: "nfs://10.0.0.3:/mnt/user/k8s_volumes/longhorn"
+  pollInterval: "5m0s"

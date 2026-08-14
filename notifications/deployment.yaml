@@ -1,0 +1,184 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: n8n
+  name: n8n
+  namespace: notifications
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: n8n
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      annotations:
+        kubectl.kubernetes.io/restartedAt: '2026-04-27T11:36:51+08:00'
+      creationTimestamp: null
+      labels:
+        app: n8n
+    spec:
+      containers:
+      - env:
+        - name: TZ
+          value: Asia/Singapore
+        - name: N8N_HOST
+          value: n8n.markklass.dev
+        - name: N8N_PORT
+          value: '5678'
+        - name: N8N_PROTOCOL
+          value: https
+        - name: WEBHOOK_URL
+          value: https://n8n.markklass.dev
+        - name: GENERIC_TIMEZONE
+          value: Asia/Singapore
+        - name: N8N_LOG_LEVEL
+          value: info
+        - name: N8N_SECURE_COOKIE
+          value: 'false'
+        - name: N8N_PUBLIC_API_ENABLED
+          value: 'true'
+        - name: N8N_PUBLIC_API_DISABLED
+          value: 'false'
+        - name: N8N_BLOCK_ENV_ACCESS_IN_NODE
+          value: 'false'
+        - name: N8N_DISABLE_PRODUCTION_MAIN_PROCESS
+          value: 'false'
+        - name: N8N_METRICS
+          value: 'true'
+        - name: DB_TYPE
+          value: postgresdb
+        - name: DB_POSTGRESDB_HOST
+          value: n8n-postgres-ha-rw.notifications.svc.cluster.local
+        - name: DB_POSTGRESDB_PORT
+          value: '5432'
+        - name: DB_POSTGRESDB_DATABASE
+          value: n8n_ai
+        - name: DB_POSTGRESDB_USER
+          value: n8n_user
+        - name: DB_POSTGRESDB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              key: POSTGRES_PASSWORD
+              name: n8n-postgres-secret
+        - name: N8N_ENCRYPTION_KEY
+          valueFrom:
+            secretKeyRef:
+              key: N8N_ENCRYPTION_KEY
+              name: n8n-credentials
+        - name: DISCORD_BOT_TOKEN
+          valueFrom:
+            secretKeyRef:
+              key: DISCORD_BOT_TOKEN
+              name: n8n-discord-credentials
+        - name: DISCORD_CHANNEL_DEFAULT
+          valueFrom:
+            secretKeyRef:
+              key: DISCORD_CHANNEL_DEFAULT
+              name: n8n-discord-credentials
+        - name: DISCORD_CHANNEL_CRITICAL
+          valueFrom:
+            secretKeyRef:
+              key: DISCORD_CHANNEL_CRITICAL
+              name: n8n-discord-credentials
+        - name: DISCORD_CHANNEL_INFO
+          valueFrom:
+            secretKeyRef:
+              key: DISCORD_CHANNEL_INFO
+              name: n8n-discord-credentials
+        - name: DISCORD_CHANNEL_MEDIA
+          valueFrom:
+            secretKeyRef:
+              key: DISCORD_CHANNEL_MEDIA
+              name: n8n-discord-credentials
+        - name: DISCORD_CHANNEL_MONITORING
+          valueFrom:
+            secretKeyRef:
+              key: DISCORD_CHANNEL_MONITORING
+              name: n8n-discord-credentials
+        - name: DISCORD_CHANNEL_DOORBELL
+          valueFrom:
+            secretKeyRef:
+              key: DISCORD_CHANNEL_DOORBELL
+              name: n8n-discord-credentials
+        - name: N8N_DIAGNOSTICS_ENABLED
+          value: 'false'
+        image: n8nio/n8n:latest
+        imagePullPolicy: Always
+        livenessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /healthz
+            port: 5678
+            scheme: HTTP
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          successThreshold: 1
+          timeoutSeconds: 10
+        name: n8n
+        ports:
+        - containerPort: 5678
+          name: http
+          protocol: TCP
+        readinessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /healthz
+            port: 5678
+            scheme: HTTP
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 5
+        resources:
+          limits:
+            cpu: '1'
+            memory: 1Gi
+          requests:
+            cpu: 500m
+            memory: 512Mi
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /home/node/.n8n
+          name: n8n-data
+      - args:
+        - tunnel
+        - --no-autoupdate
+        - run
+        env:
+        - name: TUNNEL_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: cloudflared-tunnel
+              key: token
+        - name: TZ
+          value: Asia/Singapore
+        image: cloudflare/cloudflared:2026.7.2
+        imagePullPolicy: IfNotPresent
+        name: cloudflared
+        resources:
+          limits:
+            cpu: 200m
+            memory: 128Mi
+          requests:
+            cpu: 50m
+            memory: 64Mi
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - name: n8n-data
+        persistentVolumeClaim:
+          claimName: n8n-data-longhorn

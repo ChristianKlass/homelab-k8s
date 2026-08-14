@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    metallb.io/ip-allocated-from-pool: first-pool
+    metallb.universe.tf/loadBalancerIPs: 10.0.0.110
+  labels:
+    app: n8n
+  name: n8n
+  namespace: notifications
+spec:
+  allocateLoadBalancerNodePorts: true
+  externalTrafficPolicy: Cluster
+  internalTrafficPolicy: Cluster
+  ipFamilies:
+  - IPv4
+  ipFamilyPolicy: SingleStack
+  ports:
+  - name: http
+    nodePort: 32098
+    port: 80
+    protocol: TCP
+    targetPort: 5678
+  selector:
+    app: n8n
+  sessionAffinity: None
+  type: LoadBalancer

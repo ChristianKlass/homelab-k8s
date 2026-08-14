@@ -1,0 +1,51 @@
+# Longhorn recurring jobs for the implicit "default" group (all volumes).
+# Fixes the structural gap where volumes were labelled
+# recurring-job-group.longhorn.io/default=enabled but no job existed, so
+# orphaned system snapshots accreted and never coalesced (disk filled).
+#
+# Cron is evaluated in UTC by longhorn-manager. Times below are overnight SGT.
+---
+apiVersion: longhorn.io/v1beta2
+kind: RecurringJob
+metadata:
+  name: default-snapshot
+  namespace: longhorn-system
+spec:
+  cron: "0 19 * * *"      # 03:00 SGT daily
+  task: snapshot          # create snapshot, then purge older beyond retain
+  groups:
+    - default
+  retain: 3
+  concurrency: 1
+  labels:
+    purpose: auto-retention
+---
+apiVersion: longhorn.io/v1beta2
+kind: RecurringJob
+metadata:
+  name: default-trim
+  namespace: longhorn-system
+spec:
+  cron: "30 19 * * *"     # 03:30 SGT daily, after the snapshot job
+  task: filesystem-trim   # reclaim freed blocks (Longhorn images don't shrink on their own)
+  groups:
+    - default
+  retain: 0
+  concurrency: 1
+  labels:
+    purpose: reclaim
+---
+apiVersion: longhorn.io/v1beta2
+kind: RecurringJob
+metadata:
+  name: default-backup
+  namespace: longhorn-system
+spec:
+  cron: "0 18 * * 6"      # weekly, Sat 18:00 UTC = Sun 02:00 SGT
+  task: backup            # snapshot + upload to the NAS NFS backup target
+  groups:
+    - default
+  retain: 4               # keep ~4 weeks of backups on the NAS
+  concurrency: 1
+  labels:
+    purpose: offnode-backup

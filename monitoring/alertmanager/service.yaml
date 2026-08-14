@@ -1,0 +1,28 @@
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    metallb.io/ip-allocated-from-pool: first-pool
+    metallb.universe.tf/allow-shared-ip: monitoring-stack
+  labels:
+    app: alertmanager
+  name: alertmanager
+  namespace: monitoring
+spec:
+  allocateLoadBalancerNodePorts: true
+  externalTrafficPolicy: Cluster
+  internalTrafficPolicy: Cluster
+  ipFamilies:
+  - IPv4
+  ipFamilyPolicy: SingleStack
+  loadBalancerIP: 10.0.0.121
+  ports:
+  - name: http
+    nodePort: 32524
+    port: 9093
+    protocol: TCP
+    targetPort: 9093
+  selector:
+    app: alertmanager
+  sessionAffinity: None
+  type: LoadBalancer

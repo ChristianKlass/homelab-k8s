@@ -1,0 +1,72 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: kopilog
+    component: web
+  name: kopilog-web
+  namespace: kopilog
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: kopilog
+      component: web
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: kopilog
+        component: web
+    spec:
+      containers:
+      - env:
+        - name: TZ
+          value: Asia/Singapore
+        image: registry.markklass.dev/homelab/kopilog/web:main-1786356184-afcc8aad # {"$imagepolicy": "flux-system:kopilog-web"}
+        imagePullPolicy: Always
+        name: nginx
+        ports:
+        - containerPort: 80
+          protocol: TCP
+        readinessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /
+            port: 80
+            scheme: HTTP
+          initialDelaySeconds: 2
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 1
+        resources:
+          limits:
+            cpu: 200m
+            memory: 64Mi
+          requests:
+            cpu: 10m
+            memory: 16Mi
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /usr/share/nginx/html/covers
+          name: covers
+          readOnly: true
+          subPath: content/covers
+      dnsPolicy: ClusterFirst
+      imagePullSecrets:
+      - name: gitlab-registry
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - name: covers
+        persistentVolumeClaim:
+          claimName: kopilog-data

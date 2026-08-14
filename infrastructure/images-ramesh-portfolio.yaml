@@ -1,0 +1,31 @@
+# Per-app image scanning + selection for ramesh-portfolio, kept in flux-system next to
+# the shared ImageUpdateAutomation (image-automation.yaml). Mirrors images-kopilog.yaml.
+# The $imagepolicy setter resolves the policy in the automation's own namespace, so the
+# policy lives here (not in the ramesh-portfolio namespace) and the marker reads
+# `# {"$imagepolicy": "flux-system:ramesh-portfolio"}`. Reuses the flux-system
+# gitlab-registry pull secret for the registry scan.
+apiVersion: image.toolkit.fluxcd.io/v1
+kind: ImageRepository
+metadata:
+  name: ramesh-portfolio
+  namespace: flux-system
+spec:
+  image: registry.markklass.dev/misc/ramesh_portfolio
+  interval: 5m
+  secretRef:
+    name: gitlab-registry
+---
+apiVersion: image.toolkit.fluxcd.io/v1
+kind: ImagePolicy
+metadata:
+  name: ramesh-portfolio
+  namespace: flux-system
+spec:
+  imageRepositoryRef:
+    name: ramesh-portfolio
+  filterTags:
+    pattern: '^main-(?P<ts>[0-9]+)-[0-9a-f]+$'
+    extract: '$ts'
+  policy:
+    numerical:
+      order: asc

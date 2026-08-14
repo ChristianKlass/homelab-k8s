@@ -1,0 +1,39 @@
+apiVersion: v1
+data:
+  alertmanager.yml: |
+    global:
+      resolve_timeout: 5m
+
+    route:
+      group_by: ['alertname', 'severity']
+      group_wait: 30s
+      group_interval: 5m
+      repeat_interval: 4h
+      receiver: 'telegram'
+
+    receivers:
+      - name: 'telegram'
+        telegram_configs:
+          - bot_token_file: /etc/alertmanager/secrets/bot_token
+            chat_id: 0 # redacted
+            message_thread_id: 16
+            send_resolved: true
+            parse_mode: HTML
+            message: |
+              {{ range .Alerts }}{{ if eq .Status "firing" }}🔴 <b>{{ .Annotations.summary }}</b>{{ if eq .Labels.category "down" }} is down
+              {{ .Labels.instance }} unreachable since {{ .StartsAt.Local.Format "15:04" }}{{ else }} — triggered {{ .StartsAt.Local.Format "15:04" }}{{ end }}
+              {{ else }}🟢 <b>{{ .Annotations.summary }}</b>{{ if eq .Labels.category "down" }} is back up{{ else }} resolved{{ end }}
+              {{ end }}{{ end }}
+
+    inhibit_rules:
+      - source_match:
+          severity: 'critical'
+        target_match:
+          severity: 'warning'
+        equal: ['alertname', 'instance']
+
+    templates: []
+kind: ConfigMap
+metadata:
+  name: alertmanager-config
+  namespace: monitoring

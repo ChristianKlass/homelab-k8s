@@ -1,0 +1,170 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: prometheus
+  name: prometheus
+  namespace: monitoring
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: prometheus
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      annotations:
+        kubectl.kubernetes.io/restartedAt: '2026-05-28T09:47:34+08:00'
+      creationTimestamp: null
+      labels:
+        app: prometheus
+    spec:
+      containers:
+      - args:
+        - --config.file=/etc/prometheus/prometheus.yml
+        - --storage.tsdb.path=/prometheus
+        - --storage.tsdb.retention.time=5d
+        - --storage.tsdb.retention.size=3GB
+        - --web.enable-lifecycle
+        - --web.enable-admin-api
+        env:
+        - name: TZ
+          value: Asia/Singapore
+        image: prom/prometheus:v2.48.0
+        livenessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /-/healthy
+            port: 9090
+            scheme: HTTP
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          successThreshold: 1
+          timeoutSeconds: 5
+        name: prometheus
+        ports:
+        - containerPort: 9090
+          name: http
+          protocol: TCP
+        readinessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /-/ready
+            port: 9090
+            scheme: HTTP
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 5
+        resources:
+          limits:
+            cpu: '1'
+            memory: 1536Mi
+          requests:
+            cpu: 100m
+            memory: 640Mi
+        volumeMounts:
+        - mountPath: /etc/prometheus/prometheus.yml
+          name: config
+          subPath: prometheus.yml
+        - mountPath: /etc/prometheus/rules
+          name: rules
+        - mountPath: /prometheus
+          name: data
+        - mountPath: /etc/prometheus/file_sd
+          name: file-sd
+        - mountPath: /etc/prometheus/secrets
+          name: secrets
+      - args:
+        - 'pip install --no-cache-dir --target=/tmp/deps requests urllib3 --quiet
+          && PYTHONPATH=/tmp/deps python /scripts/discover.py
+
+          '
+        command:
+        - /bin/bash
+        - -c
+        env:
+        - name: TZ
+          value: Asia/Singapore
+        - name: PROXMOX_TOKEN_ID
+          valueFrom:
+            secretKeyRef:
+              key: PROXMOX_TOKEN_ID
+              name: proxmox-api-credentials
+        - name: PROXMOX_TOKEN_SECRET
+          valueFrom:
+            secretKeyRef:
+              key: PROXMOX_TOKEN_SECRET
+              name: proxmox-api-credentials
+        - name: PROXMOX_HOSTS
+          valueFrom:
+            secretKeyRef:
+              key: PROXMOX_HOSTS
+              name: proxmox-api-credentials
+        image: python:3.11-slim
+        name: proxmox-discovery
+        resources:
+          limits:
+            cpu: 100m
+            memory: 256Mi
+          requests:
+            cpu: 50m
+            memory: 128Mi
+        securityContext:
+          runAsUser: 65534
+        volumeMounts:
+        - mountPath: /scripts
+          name: discovery-script
+        - mountPath: /etc/prometheus/file_sd
+          name: file-sd
+      dnsPolicy: ClusterFirst
+      initContainers:
+      - command:
+        - sh
+        - -c
+        - mkdir -p /file_sd && echo "[]" > /file_sd/proxmox_targets.json && chmod
+          664 /file_sd/proxmox_targets.json && chown 65534:65534 /file_sd/proxmox_targets.json
+        image: busybox:1.36
+        name: init-file-sd
+        resources: {}
+        volumeMounts:
+        - mountPath: /file_sd
+          name: file-sd
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext:
+        fsGroup: 65534
+      serviceAccount: prometheus
+      serviceAccountName: prometheus
+      terminationGracePeriodSeconds: 10
+      volumes:
+      - configMap:
+          defaultMode: 420
+          name: prometheus-config
+        name: config
+      - configMap:
+          defaultMode: 420
+          name: prometheus-rules
+        name: rules
+      - configMap:
+          defaultMode: 420
+          name: proxmox-discovery-script
+        name: discovery-script
+      - name: data
+        persistentVolumeClaim:
+          claimName: prometheus-data-longhorn
+      - emptyDir: {}
+        name: file-sd
+      - name: secrets
+        projected:
+          defaultMode: 420
+          sources:
+          - secret:
+              items:
+              - key: HOMEASSISTANT_TOKEN
+                path: homeassistant_token
+              name: homeassistant-credentials
+

@@ -1,0 +1,10 @@
+apiVersion: v1
+data:
+  dashboards.yaml: "apiVersion: 1\nproviders:\n  - name: 'default'\n    orgId: 1\n\
+    \    folder: 'Homelab'\n    folderUid: 'homelab'\n    type: file\n    disableDeletion:\
+    \ false\n    updateIntervalSeconds: 30\n    allowUiUpdates: true\n    options:\n\
+    \      path: /var/lib/grafana/dashboards\n"
+kind: ConfigMap
+metadata:
+  name: grafana-dashboards-config
+  namespace: monitoring

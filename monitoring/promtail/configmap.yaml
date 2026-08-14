@@ -1,0 +1,21 @@
+apiVersion: v1
+data:
+  promtail.yaml: "server:\n  http_listen_port: 9080\n  grpc_listen_port: 0\n  log_level:\
+    \ warn\n\npositions:\n  filename: /run/promtail/positions.yaml\n\nclients:\n \
+    \ - url: http://loki:3100/loki/api/v1/push\n\nscrape_configs:\n  - job_name: kubernetes-pods\n\
+    \    static_configs:\n      - targets: [localhost]\n        labels:\n        \
+    \  job: kubernetes-pods\n          node: ${HOSTNAME}\n          __path__: /var/log/pods/**/*.log\n\
+    \    pipeline_stages:\n      - cri: {}\n      # Extract namespace, pod, container\
+    \ from the file path\n      # Path format: /var/log/pods/<namespace>_<pod>_<uid>/<container>/<N>.log\n\
+    \      - regex:\n          expression: '/var/log/pods/(?P<namespace>[^_]+)_(?P<pod>.+)_[a-f0-9-]+/(?P<container>[^/]+)/\\\
+    d+\\.log'\n          source: filename\n      - labels:\n          namespace:\n\
+    \          pod:\n          container:\n      # Try to extract level from JSON\
+    \ logs\n      - json:\n          expressions:\n            level: level\n    \
+    \      source: output\n      - labels:\n          level:\n      - replace:\n \
+    \         expression: '(?i)^(warn|warning)$'\n          source: level\n      \
+    \    replace: 'warn'\n      - replace:\n          expression: '(?i)^(err|error|fatal|panic)$'\n\
+    \          source: level\n          replace: 'error'\n"
+kind: ConfigMap
+metadata:
+  name: promtail-config
+  namespace: monitoring

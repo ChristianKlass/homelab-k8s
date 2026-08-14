@@ -1,0 +1,35 @@
+# Cluster-wide image automation.
+# Scans the whole repo for `# {"$imagepolicy": "<ns>:<name>"}` markers and writes
+# the tag chosen by each ImagePolicy back to git, committing + pushing to main.
+# Reuses the flux-system GitRepository (and its write-capable token) as the source.
+# One automation serves every app: add an ImageRepository + ImagePolicy + a marker
+# in any app, and it gets picked up here — no per-app automation object needed.
+apiVersion: image.toolkit.fluxcd.io/v1
+kind: ImageUpdateAutomation
+metadata:
+  name: flux-image-automation
+  namespace: flux-system
+spec:
+  interval: 5m
+  sourceRef:
+    kind: GitRepository
+    name: flux-system
+  git:
+    checkout:
+      ref:
+        branch: main
+    commit:
+      author:
+        name: fluxcdbot
+        email: fluxcdbot@markklass.dev
+      messageTemplate: |
+        Automated image update
+
+        {{ range .Changed.Changes -}}
+        - {{ .OldValue }} -> {{ .NewValue }}
+        {{ end -}}
+    push:
+      branch: main
+  update:
+    path: ./
+    strategy: Setters

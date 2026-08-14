@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  annotations:
+    volume.beta.kubernetes.io/storage-provisioner: driver.longhorn.io
+    volume.kubernetes.io/storage-provisioner: driver.longhorn.io
+  finalizers:
+  - kubernetes.io/pvc-protection
+  name: prometheus-data-longhorn
+  namespace: monitoring
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 15Gi
+  storageClassName: longhorn
+  volumeMode: Filesystem
+  volumeName: pvc-3c1d99b4-6f82-477d-8eed-30911b03514c

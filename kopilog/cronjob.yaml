@@ -1,0 +1,91 @@
+# The pipeline CronJob (ingest -> cluster -> synthesize -> render -> astro build
+# -> git publish). Mon/Wed/Fri 18:00 Asia/Singapore. Was hand-applied from the
+# kopilog app repo's k8s/ dir for the early phases and never tracked here — that
+# drift is why it lived outside GitOps. Now reconciled by Flux like the web tier.
+# Pulls the rolling :latest pipeline image (CI pushes it on every green main);
+# imagePullPolicy: Always so each run gets the newest code.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: kopilog-pipeline
+  namespace: kopilog
+  labels:
+    app: kopilog
+    component: pipeline
+spec:
+  schedule: "0 18 * * 1,3,5"
+  timeZone: "Asia/Singapore"        # requires k8s >= 1.27 (cluster is 1.30)
+  concurrencyPolicy: Forbid         # never overlap runs (single-writer state)
+  startingDeadlineSeconds: 600
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      activeDeadlineSeconds: 1800    # hard cap a run at 30m
+      template:
+        metadata:
+          labels:
+            app: kopilog
+            component: pipeline
+        spec:
+          restartPolicy: Never
+          imagePullSecrets:
+            - name: gitlab-registry
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 10001
+            runAsGroup: 10001
+            fsGroup: 10001
+          containers:
+            - name: pipeline
+              # Cluster pulls the GitLab registry by its in-LAN IP:port (the
+              # convention used by other namespaces), with the gitlab-registry
+              # pull secret. Push with `registry.markklass.dev/homelab/kopilog`
+              # (same backend registry) from a workstation that's logged in.
+              image: 10.0.0.17:5050/homelab/kopilog:latest
+              imagePullPolicy: Always
+              envFrom:
+                - configMapRef:
+                    name: kopilog-config
+                - secretRef:
+                    name: kopilog-secrets
+                    optional: true        # Pexels key optional -> no cover images
+              env:
+                # GitOps publish: commit synthesized posts to the repo and push;
+                # a push triggers CI to build the web image and deploy.
+                - name: KOPILOG_PUBLISH
+                  value: "git"
+                - name: KOPILOG_GIT_REPO_URL
+                  value: "https://git.markklass.dev/homelab/kopilog.git"
+                - name: KOPILOG_GIT_BRANCH
+                  value: "main"
+                - name: KOPILOG_GIT_AUTHOR_NAME
+                  value: "kopilog-bot"
+                - name: KOPILOG_GIT_AUTHOR_EMAIL
+                  value: "kopilog-bot@markklass.dev"
+                - name: GITLAB_PUSH_TOKEN
+                  valueFrom:
+                    secretKeyRef:
+                      name: kopilog-git
+                      key: token
+              volumeMounts:
+                - name: data
+                  mountPath: /data
+                - name: feeds
+                  mountPath: /config
+                  readOnly: true
+              resources:
+                requests:
+                  cpu: "250m"
+                  memory: "512Mi"
+                limits:
+                  cpu: "1"
+                  memory: "1Gi"
+          volumes:
+            - name: data
+              persistentVolumeClaim:
+                claimName: kopilog-data
+            - name: feeds
+              configMap:
+                name: kopilog-feeds

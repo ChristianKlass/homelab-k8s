@@ -1,0 +1,569 @@
+apiVersion: v1
+data:
+  homelab-overview.json: "{\n  \"annotations\": { \"list\": [] },\n  \"editable\"\
+    : true,\n  \"fiscalYearStartMonth\": 0,\n  \"graphTooltip\": 1,\n  \"id\": null,\n\
+    \  \"links\": [],\n  \"liveNow\": false,\n  \"panels\": [\n    {\n      \"collapsed\"\
+    : false,\n      \"gridPos\": { \"h\": 1, \"w\": 24, \"x\": 0, \"y\": 0 },\n  \
+    \    \"id\": 1,\n      \"title\": \"Infrastructure Status\",\n      \"type\":\
+    \ \"row\"\n    },\n    {\n      \"datasource\": { \"type\": \"prometheus\", \"\
+    uid\": \"prometheus\" },\n      \"fieldConfig\": {\n        \"defaults\": {\n\
+    \          \"color\": { \"mode\": \"thresholds\" },\n          \"mappings\": [\n\
+    \            { \"options\": { \"0\": { \"color\": \"red\", \"text\": \"DOWN\"\
+    \ }, \"1\": { \"color\": \"green\", \"text\": \"UP\" } }, \"type\": \"value\"\
+    \ }\n          ],\n          \"thresholds\": { \"mode\": \"absolute\", \"steps\"\
+    : [{ \"color\": \"red\", \"value\": null }, { \"color\": \"green\", \"value\"\
+    : 1 }] }\n        }\n      },\n      \"gridPos\": { \"h\": 3, \"w\": 3, \"x\"\
+    : 0, \"y\": 1 },\n      \"id\": 2,\n      \"options\": { \"colorMode\": \"background\"\
+    , \"graphMode\": \"none\", \"justifyMode\": \"center\", \"orientation\": \"horizontal\"\
+    , \"reduceOptions\": { \"calcs\": [\"lastNotNull\"], \"fields\": \"\", \"values\"\
+    : false }, \"textMode\": \"auto\" },\n      \"targets\": [{ \"expr\": \"up{job=\\\
+    \"homeassistant\\\"}\", \"legendFormat\": \"Home Assistant\", \"refId\": \"A\"\
+    \ }],\n      \"title\": \"Home Assistant\",\n      \"type\": \"stat\"\n    },\n\
+    \    {\n      \"datasource\": { \"type\": \"prometheus\", \"uid\": \"prometheus\"\
+    \ },\n      \"fieldConfig\": {\n        \"defaults\": {\n          \"color\":\
+    \ { \"mode\": \"thresholds\" },\n          \"mappings\": [\n            { \"options\"\
+    : { \"0\": { \"color\": \"red\", \"text\": \"DOWN\" }, \"1\": { \"color\": \"\
+    green\", \"text\": \"UP\" } }, \"type\": \"value\" }\n          ],\n         \
+    \ \"thresholds\": { \"mode\": \"absolute\", \"steps\": [{ \"color\": \"red\",\
+    \ \"value\": null }, { \"color\": \"green\", \"value\": 1 }] }\n        }\n  \
+    \    },\n      \"gridPos\": { \"h\": 3, \"w\": 3, \"x\": 3, \"y\": 1 },\n    \
+    \  \"id\": 3,\n      \"options\": { \"colorMode\": \"background\", \"graphMode\"\
+    : \"none\", \"justifyMode\": \"center\", \"orientation\": \"horizontal\", \"reduceOptions\"\
+    : { \"calcs\": [\"lastNotNull\"], \"fields\": \"\", \"values\": false }, \"textMode\"\
+    : \"auto\" },\n      \"targets\": [{ \"expr\": \"up{job=\\\"unraid\\\"}\", \"\
+    legendFormat\": \"Unraid\", \"refId\": \"A\" }],\n      \"title\": \"Unraid NAS\"\
+    ,\n      \"type\": \"stat\"\n    },\n    {\n      \"datasource\": { \"type\":\
+    \ \"prometheus\", \"uid\": \"prometheus\" },\n      \"fieldConfig\": {\n     \
+    \   \"defaults\": {\n          \"color\": { \"mode\": \"thresholds\" },\n    \
+    \      \"mappings\": [\n            { \"options\": { \"0\": { \"color\": \"red\"\
+    , \"text\": \"DOWN\" }, \"1\": { \"color\": \"green\", \"text\": \"UP\" } }, \"\
+    type\": \"value\" }\n          ],\n          \"thresholds\": { \"mode\": \"absolute\"\
+    , \"steps\": [{ \"color\": \"red\", \"value\": null }, { \"color\": \"green\"\
+    , \"value\": 1 }] }\n        }\n      },\n      \"gridPos\": { \"h\": 3, \"w\"\
+    : 3, \"x\": 6, \"y\": 1 },\n      \"id\": 4,\n      \"options\": { \"colorMode\"\
+    : \"background\", \"graphMode\": \"none\", \"justifyMode\": \"center\", \"orientation\"\
+    : \"horizontal\", \"reduceOptions\": { \"calcs\": [\"lastNotNull\"], \"fields\"\
+    : \"\", \"values\": false }, \"textMode\": \"auto\" },\n      \"targets\": [{\
+    \ \"expr\": \"probe_success{job=\\\"blackbox-icmp\\\",name=\\\"router\\\"}\",\
+    \ \"legendFormat\": \"Router\", \"refId\": \"A\" }],\n      \"title\": \"Router\"\
+    ,\n      \"type\": \"stat\"\n    },\n    {\n      \"datasource\": { \"type\":\
+    \ \"prometheus\", \"uid\": \"prometheus\" },\n      \"fieldConfig\": {\n     \
+    \   \"defaults\": {\n          \"color\": { \"mode\": \"thresholds\" },\n    \
+    \      \"mappings\": [\n            { \"options\": { \"0\": { \"color\": \"red\"\
+    , \"text\": \"DOWN\" }, \"1\": { \"color\": \"green\", \"text\": \"UP\" } }, \"\
+    type\": \"value\" }\n          ],\n          \"thresholds\": { \"mode\": \"absolute\"\
+    , \"steps\": [{ \"color\": \"red\", \"value\": null }, { \"color\": \"green\"\
+    , \"value\": 1 }] }\n        }\n      },\n      \"gridPos\": { \"h\": 3, \"w\"\
+    : 3, \"x\": 9, \"y\": 1 },\n      \"id\": 5,\n      \"options\": { \"colorMode\"\
+    : \"background\", \"graphMode\": \"none\", \"justifyMode\": \"center\", \"orientation\"\
+    : \"horizontal\", \"reduceOptions\": { \"calcs\": [\"lastNotNull\"], \"fields\"\
+    : \"\", \"values\": false }, \"textMode\": \"auto\" },\n      \"targets\": [{\
+    \ \"expr\": \"probe_success{job=\\\"blackbox-icmp\\\",name=\\\"internet\\\"}\"\
+    , \"legendFormat\": \"Internet\", \"refId\": \"A\" }],\n      \"title\": \"Internet\"\
+    ,\n      \"type\": \"stat\"\n    },\n    {\n      \"datasource\": { \"type\":\
+    \ \"prometheus\", \"uid\": \"prometheus\" },\n      \"fieldConfig\": {\n     \
+    \   \"defaults\": {\n          \"color\": { \"mode\": \"thresholds\" },\n    \
+    \      \"mappings\": [\n            { \"options\": { \"0\": { \"color\": \"red\"\
+    , \"text\": \"DOWN\" }, \"1\": { \"color\": \"green\", \"text\": \"UP\" } }, \"\
+    type\": \"value\" }\n          ],\n          \"thresholds\": { \"mode\": \"absolute\"\
+    , \"steps\": [{ \"color\": \"red\", \"value\": null }, { \"color\": \"green\"\
+    , \"value\": 1 }] }\n        }\n      },\n      \"gridPos\": { \"h\": 3, \"w\"\
+    : 3, \"x\": 12, \"y\": 1 },\n      \"id\": 6,\n      \"options\": { \"colorMode\"\
+    : \"background\", \"graphMode\": \"none\", \"justifyMode\": \"center\", \"orientation\"\
+    : \"horizontal\", \"reduceOptions\": { \"calcs\": [\"lastNotNull\"], \"fields\"\
+    : \"\", \"values\": false }, \"textMode\": \"auto\" },\n      \"targets\": [{\
+    \ \"expr\": \"up{job=\\\"n8n\\\"}\", \"legendFormat\": \"n8n\", \"refId\": \"\
+    A\" }],\n      \"title\": \"n8n\",\n      \"type\": \"stat\"\n    },\n    {\n\
+    \      \"datasource\": { \"type\": \"prometheus\", \"uid\": \"prometheus\" },\n\
+    \      \"fieldConfig\": {\n        \"defaults\": {\n          \"color\": { \"\
+    mode\": \"thresholds\" },\n          \"thresholds\": { \"mode\": \"absolute\"\
+    , \"steps\": [{ \"color\": \"red\", \"value\": null }, { \"color\": \"green\"\
+    , \"value\": 1 }] },\n          \"unit\": \"short\"\n        }\n      },\n   \
+    \   \"gridPos\": { \"h\": 3, \"w\": 3, \"x\": 15, \"y\": 1 },\n      \"id\": 7,\n\
+    \      \"options\": { \"colorMode\": \"background\", \"graphMode\": \"none\",\
+    \ \"justifyMode\": \"center\", \"orientation\": \"horizontal\", \"reduceOptions\"\
+    : { \"calcs\": [\"lastNotNull\"], \"fields\": \"\", \"values\": false }, \"textMode\"\
+    : \"auto\" },\n      \"targets\": [{ \"expr\": \"count(up{job=\\\"proxmox-vms\\\
+    \"} == 1)\", \"legendFormat\": \"VMs Up\", \"refId\": \"A\" }],\n      \"title\"\
+    : \"VMs/LXCs Up\",\n      \"type\": \"stat\"\n    },\n    {\n      \"datasource\"\
+    : { \"type\": \"prometheus\", \"uid\": \"prometheus\" },\n      \"fieldConfig\"\
+    : {\n        \"defaults\": {\n          \"color\": { \"mode\": \"thresholds\"\
+    \ },\n          \"thresholds\": { \"mode\": \"absolute\", \"steps\": [{ \"color\"\
+    : \"red\", \"value\": null }, { \"color\": \"green\", \"value\": 7 }] },\n   \
+    \       \"unit\": \"short\"\n        }\n      },\n      \"gridPos\": { \"h\":\
+    \ 3, \"w\": 3, \"x\": 18, \"y\": 1 },\n      \"id\": 8,\n      \"options\": {\
+    \ \"colorMode\": \"background\", \"graphMode\": \"none\", \"justifyMode\": \"\
+    center\", \"orientation\": \"horizontal\", \"reduceOptions\": { \"calcs\": [\"\
+    lastNotNull\"], \"fields\": \"\", \"values\": false }, \"textMode\": \"auto\"\
+    \ },\n      \"targets\": [{ \"expr\": \"count(up{job=\\\"k8s-nodes\\\"} == 1)\"\
+    , \"legendFormat\": \"K8s Nodes\", \"refId\": \"A\" }],\n      \"title\": \"K8s\
+    \ Nodes\",\n      \"type\": \"stat\"\n    },\n    {\n      \"datasource\": { \"\
+    type\": \"prometheus\", \"uid\": \"prometheus\" },\n      \"fieldConfig\": {\n\
+    \        \"defaults\": {\n          \"color\": { \"mode\": \"thresholds\" },\n\
+    \          \"thresholds\": { \"mode\": \"absolute\", \"steps\": [{ \"color\":\
+    \ \"green\", \"value\": null }, { \"color\": \"orange\", \"value\": 1 }, { \"\
+    color\": \"red\", \"value\": 3 }] },\n          \"unit\": \"short\",\n       \
+    \   \"noValue\": \"0\"\n        }\n      },\n      \"gridPos\": { \"h\": 3, \"\
+    w\": 3, \"x\": 21, \"y\": 1 },\n      \"id\": 9,\n      \"options\": { \"colorMode\"\
+    : \"background\", \"graphMode\": \"none\", \"justifyMode\": \"center\", \"orientation\"\
+    : \"horizontal\", \"reduceOptions\": { \"calcs\": [\"lastNotNull\"], \"fields\"\
+    : \"\", \"values\": false }, \"textMode\": \"auto\" },\n      \"targets\": [{\
+    \ \"expr\": \"count(ALERTS{alertstate=\\\"firing\\\"})\", \"legendFormat\": \"\
+    Alerts\", \"refId\": \"A\" }],\n      \"title\": \"Firing Alerts\",\n      \"\
+    type\": \"stat\"\n    },\n\n    {\n      \"collapsed\": false,\n      \"gridPos\"\
+    : { \"h\": 1, \"w\": 24, \"x\": 0, \"y\": 4 },\n      \"id\": 10,\n      \"title\"\
+    : \"Kubernetes Cluster\",\n      \"type\": \"row\"\n    },\n    {\n      \"datasource\"\
+    : { \"type\": \"prometheus\", \"uid\": \"prometheus\" },\n      \"fieldConfig\"\
+    : {\n        \"defaults\": {\n          \"color\": { \"mode\": \"palette-classic\"\
+    \ },\n          \"custom\": { \"axisCenteredZero\": false, \"axisLabel\": \"\"\
+    , \"axisPlacement\": \"auto\", \"barAlignment\": 0, \"drawStyle\": \"line\", \"\
+    fillOpacity\": 15, \"lineInterpolation\": \"smooth\", \"lineWidth\": 2, \"pointSize\"\
+    : 5, \"showPoints\": \"never\", \"stacking\": { \"group\": \"A\", \"mode\": \"\
+    none\" } },\n          \"thresholds\": { \"mode\": \"absolute\", \"steps\": [{\
+    \ \"color\": \"green\", \"value\": null }, { \"color\": \"orange\", \"value\"\
+    : 0.7 }, { \"color\": \"red\", \"value\": 0.9 }] },\n          \"unit\": \"percentunit\"\
+    ,\n          \"max\": 1,\n          \"min\": 0\n        }\n      },\n      \"\
+    gridPos\": { \"h\": 8, \"w\": 12, \"x\": 0, \"y\": 5 },\n      \"id\": 11,\n \
+    \     \"options\": { \"legend\": { \"calcs\": [\"mean\", \"lastNotNull\"], \"\
+    displayMode\": \"table\", \"placement\": \"right\", \"sortBy\": \"Last *\", \"\
+    sortDesc\": true }, \"tooltip\": { \"mode\": \"multi\", \"sort\": \"desc\" } },\n\
+    \      \"targets\": [{ \"expr\": \"1 - avg by (vm_name) (rate(node_cpu_seconds_total{mode=\\\
+    \"idle\\\",job=\\\"k8s-nodes\\\"}[5m]))\", \"legendFormat\": \"{{ vm_name }}\"\
+    , \"refId\": \"A\" }],\n      \"title\": \"Node CPU Usage\",\n      \"type\":\
+    \ \"timeseries\"\n    },\n    {\n      \"datasource\": { \"type\": \"prometheus\"\
+    , \"uid\": \"prometheus\" },\n      \"fieldConfig\": {\n        \"defaults\":\
+    \ {\n          \"color\": { \"mode\": \"palette-classic\" },\n          \"custom\"\
+    : { \"axisCenteredZero\": false, \"axisLabel\": \"\", \"axisPlacement\": \"auto\"\
+    , \"barAlignment\": 0, \"drawStyle\": \"line\", \"fillOpacity\": 15, \"lineInterpolation\"\
+    : \"smooth\", \"lineWidth\": 2, \"pointSize\": 5, \"showPoints\": \"never\", \"\
+    stacking\": { \"group\": \"A\", \"mode\": \"none\" } },\n          \"thresholds\"\
+    : { \"mode\": \"absolute\", \"steps\": [{ \"color\": \"green\", \"value\": null\
+    \ }, { \"color\": \"orange\", \"value\": 0.7 }, { \"color\": \"red\", \"value\"\
+    : 0.9 }] },\n          \"unit\": \"percentunit\",\n          \"max\": 1,\n   \
+    \       \"min\": 0\n        }\n      },\n      \"gridPos\": { \"h\": 8, \"w\"\
+    : 12, \"x\": 12, \"y\": 5 },\n      \"id\": 12,\n      \"options\": { \"legend\"\
+    : { \"calcs\": [\"mean\", \"lastNotNull\"], \"displayMode\": \"table\", \"placement\"\
+    : \"right\", \"sortBy\": \"Last *\", \"sortDesc\": true }, \"tooltip\": { \"mode\"\
+    : \"multi\", \"sort\": \"desc\" } },\n      \"targets\": [{ \"expr\": \"1 - (node_memory_MemAvailable_bytes{job=\\\
+    \"k8s-nodes\\\"} / node_memory_MemTotal_bytes{job=\\\"k8s-nodes\\\"})\", \"legendFormat\"\
+    : \"{{ vm_name }}\", \"refId\": \"A\" }],\n      \"title\": \"Node Memory Usage\"\
+    ,\n      \"type\": \"timeseries\"\n    },\n    {\n      \"datasource\": { \"type\"\
+    : \"prometheus\", \"uid\": \"prometheus\" },\n      \"fieldConfig\": {\n     \
+    \   \"defaults\": {\n          \"color\": { \"mode\": \"palette-classic\" },\n\
+    \          \"custom\": { \"axisCenteredZero\": false, \"axisLabel\": \"\", \"\
+    axisPlacement\": \"auto\", \"barAlignment\": 0, \"drawStyle\": \"line\", \"fillOpacity\"\
+    : 15, \"lineInterpolation\": \"smooth\", \"lineWidth\": 2, \"pointSize\": 5, \"\
+    showPoints\": \"never\", \"stacking\": { \"group\": \"A\", \"mode\": \"normal\"\
+    \ } },\n          \"unit\": \"short\"\n        }\n      },\n      \"gridPos\"\
+    : { \"h\": 8, \"w\": 12, \"x\": 0, \"y\": 13 },\n      \"id\": 13,\n      \"options\"\
+    : { \"legend\": { \"calcs\": [\"lastNotNull\"], \"displayMode\": \"table\", \"\
+    placement\": \"right\", \"sortBy\": \"Last *\", \"sortDesc\": true }, \"tooltip\"\
+    : { \"mode\": \"multi\", \"sort\": \"desc\" } },\n      \"targets\": [{ \"expr\"\
+    : \"sum by (namespace) (rate(container_cpu_usage_seconds_total{image!=\\\"\\\"\
+    ,container!=\\\"POD\\\",container!=\\\"\\\"}[5m]))\", \"legendFormat\": \"{{ namespace\
+    \ }}\", \"refId\": \"A\" }],\n      \"title\": \"CPU Usage by Namespace\",\n \
+    \     \"type\": \"timeseries\"\n    },\n    {\n      \"datasource\": { \"type\"\
+    : \"prometheus\", \"uid\": \"prometheus\" },\n      \"fieldConfig\": {\n     \
+    \   \"defaults\": {\n          \"color\": { \"mode\": \"palette-classic\" },\n\
+    \          \"custom\": { \"axisCenteredZero\": false, \"axisLabel\": \"\", \"\
+    axisPlacement\": \"auto\", \"barAlignment\": 0, \"drawStyle\": \"line\", \"fillOpacity\"\
+    : 15, \"lineInterpolation\": \"smooth\", \"lineWidth\": 2, \"pointSize\": 5, \"\
+    showPoints\": \"never\", \"stacking\": { \"group\": \"A\", \"mode\": \"normal\"\
+    \ } },\n          \"unit\": \"bytes\"\n        }\n      },\n      \"gridPos\"\
+    : { \"h\": 8, \"w\": 12, \"x\": 12, \"y\": 13 },\n      \"id\": 14,\n      \"\
+    options\": { \"legend\": { \"calcs\": [\"lastNotNull\"], \"displayMode\": \"table\"\
+    , \"placement\": \"right\", \"sortBy\": \"Last *\", \"sortDesc\": true }, \"tooltip\"\
+    : { \"mode\": \"multi\", \"sort\": \"desc\" } },\n      \"targets\": [{ \"expr\"\
+    : \"sum by (namespace) (container_memory_working_set_bytes{image!=\\\"\\\",container!=\\\
+    \"POD\\\",container!=\\\"\\\"})\", \"legendFormat\": \"{{ namespace }}\", \"refId\"\
+    : \"A\" }],\n      \"title\": \"Memory Usage by Namespace\",\n      \"type\":\
+    \ \"timeseries\"\n    },\n    {\n      \"datasource\": { \"type\": \"prometheus\"\
+    , \"uid\": \"prometheus\" },\n      \"fieldConfig\": {\n        \"defaults\":\
+    \ {\n          \"color\": { \"mode\": \"thresholds\" },\n          \"custom\"\
+    : { \"align\": \"auto\", \"cellOptions\": { \"type\": \"auto\" }, \"inspect\"\
+    : false },\n          \"thresholds\": { \"mode\": \"absolute\", \"steps\": [{\
+    \ \"color\": \"green\", \"value\": null }] }\n        },\n        \"overrides\"\
+    : [\n          {\n            \"matcher\": { \"id\": \"byName\", \"options\":\
+    \ \"CPU Cores\" },\n            \"properties\": [\n              { \"id\": \"\
+    unit\", \"value\": \"short\" },\n              { \"id\": \"decimals\", \"value\"\
+    : 2 },\n              { \"id\": \"custom.cellOptions\", \"value\": { \"mode\"\
+    : \"gradient\", \"type\": \"gauge\" } },\n              { \"id\": \"thresholds\"\
+    , \"value\": { \"mode\": \"absolute\", \"steps\": [{ \"color\": \"green\", \"\
+    value\": null }, { \"color\": \"orange\", \"value\": 1 }, { \"color\": \"red\"\
+    , \"value\": 2 }] } },\n              { \"id\": \"max\", \"value\": 4 }\n    \
+    \        ]\n          },\n          {\n            \"matcher\": { \"id\": \"byName\"\
+    , \"options\": \"Memory\" },\n            \"properties\": [\n              { \"\
+    id\": \"unit\", \"value\": \"bytes\" },\n              { \"id\": \"custom.cellOptions\"\
+    , \"value\": { \"mode\": \"gradient\", \"type\": \"gauge\" } },\n            \
+    \  { \"id\": \"thresholds\", \"value\": { \"mode\": \"absolute\", \"steps\": [{\
+    \ \"color\": \"green\", \"value\": null }, { \"color\": \"orange\", \"value\"\
+    : 536870912 }, { \"color\": \"red\", \"value\": 1073741824 }] } },\n         \
+    \     { \"id\": \"max\", \"value\": 2147483648 }\n            ]\n          },\n\
+    \          {\n            \"matcher\": { \"id\": \"byName\", \"options\": \"Restarts\"\
+    \ },\n            \"properties\": [\n              { \"id\": \"custom.cellOptions\"\
+    , \"value\": { \"mode\": \"basic\", \"type\": \"color-background\" } },\n    \
+    \          { \"id\": \"thresholds\", \"value\": { \"mode\": \"absolute\", \"steps\"\
+    : [{ \"color\": \"transparent\", \"value\": null }, { \"color\": \"orange\", \"\
+    value\": 1 }, { \"color\": \"red\", \"value\": 5 }] } }\n            ]\n     \
+    \     }\n        ]\n      },\n      \"gridPos\": { \"h\": 10, \"w\": 24, \"x\"\
+    : 0, \"y\": 21 },\n      \"id\": 15,\n      \"options\": { \"footer\": { \"countRows\"\
+    : false, \"fields\": \"\", \"reducer\": [\"sum\"] }, \"showHeader\": true, \"\
+    sortBy\": [{ \"desc\": true, \"displayName\": \"CPU Cores\" }] },\n      \"targets\"\
+    : [\n        { \"expr\": \"sum by (namespace, pod) (rate(container_cpu_usage_seconds_total{image!=\\\
+    \"\\\",container!=\\\"POD\\\",container!=\\\"\\\"}[5m]))\", \"format\": \"table\"\
+    , \"instant\": true, \"refId\": \"cpu\" },\n        { \"expr\": \"sum by (namespace,\
+    \ pod) (container_memory_working_set_bytes{image!=\\\"\\\",container!=\\\"POD\\\
+    \",container!=\\\"\\\"})\", \"format\": \"table\", \"instant\": true, \"refId\"\
+    : \"memory\" },\n        { \"expr\": \"sum by (namespace, pod) (increase(container_cpu_cfs_throttled_periods_total{container!=\\\
+    \"POD\\\",container!=\\\"\\\"}[1h]))\", \"format\": \"table\", \"instant\": true,\
+    \ \"refId\": \"restarts\" }\n      ],\n      \"title\": \"Top Pods by Resource\
+    \ Usage\",\n      \"transformations\": [\n        { \"id\": \"seriesToColumns\"\
+    , \"options\": { \"byField\": \"pod\" } },\n        { \"id\": \"organize\", \"\
+    options\": { \"excludeByName\": { \"Time\": true, \"Time 1\": true, \"Time 2\"\
+    : true, \"Time 3\": true, \"namespace 2\": true, \"namespace 3\": true }, \"renameByName\"\
+    : { \"Value #cpu\": \"CPU Cores\", \"Value #memory\": \"Memory\", \"Value #restarts\"\
+    : \"Throttled\", \"namespace 1\": \"Namespace\", \"pod\": \"Pod\" } } },\n   \
+    \     { \"id\": \"sortBy\", \"options\": { \"fields\": {}, \"sort\": [{ \"desc\"\
+    : true, \"field\": \"CPU Cores\" }] } }\n      ],\n      \"type\": \"table\"\n\
+    \    },\n\n    {\n      \"collapsed\": false,\n      \"gridPos\": { \"h\": 1,\
+    \ \"w\": 24, \"x\": 0, \"y\": 31 },\n      \"id\": 20,\n      \"title\": \"Infrastructure\
+    \ Hosts\",\n      \"type\": \"row\"\n    },\n    {\n      \"datasource\": { \"\
+    type\": \"prometheus\", \"uid\": \"prometheus\" },\n      \"fieldConfig\": {\n\
+    \        \"defaults\": {\n          \"color\": { \"mode\": \"palette-classic\"\
+    \ },\n          \"custom\": { \"axisCenteredZero\": false, \"axisLabel\": \"\"\
+    , \"axisPlacement\": \"auto\", \"barAlignment\": 0, \"drawStyle\": \"line\", \"\
+    fillOpacity\": 15, \"lineInterpolation\": \"smooth\", \"lineWidth\": 2, \"pointSize\"\
+    : 5, \"showPoints\": \"never\", \"stacking\": { \"group\": \"A\", \"mode\": \"\
+    none\" } },\n          \"thresholds\": { \"mode\": \"absolute\", \"steps\": [{\
+    \ \"color\": \"green\", \"value\": null }, { \"color\": \"orange\", \"value\"\
+    : 0.7 }, { \"color\": \"red\", \"value\": 0.9 }] },\n          \"unit\": \"percentunit\"\
+    ,\n          \"max\": 1,\n          \"min\": 0\n        }\n      },\n      \"\
+    gridPos\": { \"h\": 8, \"w\": 12, \"x\": 0, \"y\": 32 },\n      \"id\": 21,\n\
+    \      \"options\": { \"legend\": { \"calcs\": [\"mean\", \"lastNotNull\"], \"\
+    displayMode\": \"table\", \"placement\": \"right\", \"sortBy\": \"Last *\", \"\
+    sortDesc\": true }, \"tooltip\": { \"mode\": \"multi\", \"sort\": \"desc\" } },\n\
+    \      \"targets\": [{ \"expr\": \"1 - avg by (vm_name) (rate(node_cpu_seconds_total{mode=\\\
+    \"idle\\\",job=\\\"proxmox-vms\\\"}[5m]))\", \"legendFormat\": \"{{ vm_name }}\"\
+    , \"refId\": \"A\" }],\n      \"title\": \"VM/Host CPU Usage\",\n      \"type\"\
+    : \"timeseries\"\n    },\n    {\n      \"datasource\": { \"type\": \"prometheus\"\
+    , \"uid\": \"prometheus\" },\n      \"fieldConfig\": {\n        \"defaults\":\
+    \ {\n          \"color\": { \"mode\": \"palette-classic\" },\n          \"custom\"\
+    : { \"axisCenteredZero\": false, \"axisLabel\": \"\", \"axisPlacement\": \"auto\"\
+    , \"barAlignment\": 0, \"drawStyle\": \"line\", \"fillOpacity\": 15, \"lineInterpolation\"\
+    : \"smooth\", \"lineWidth\": 2, \"pointSize\": 5, \"showPoints\": \"never\", \"\
+    stacking\": { \"group\": \"A\", \"mode\": \"none\" } },\n          \"thresholds\"\
+    : { \"mode\": \"absolute\", \"steps\": [{ \"color\": \"green\", \"value\": null\
+    \ }, { \"color\": \"orange\", \"value\": 0.7 }, { \"color\": \"red\", \"value\"\
+    : 0.9 }] },\n          \"unit\": \"percentunit\",\n          \"max\": 1,\n   \
+    \       \"min\": 0\n        }\n      },\n      \"gridPos\": { \"h\": 8, \"w\"\
+    : 12, \"x\": 12, \"y\": 32 },\n      \"id\": 22,\n      \"options\": { \"legend\"\
+    : { \"calcs\": [\"mean\", \"lastNotNull\"], \"displayMode\": \"table\", \"placement\"\
+    : \"right\", \"sortBy\": \"Last *\", \"sortDesc\": true }, \"tooltip\": { \"mode\"\
+    : \"multi\", \"sort\": \"desc\" } },\n      \"targets\": [{ \"expr\": \"1 - (node_memory_MemAvailable_bytes{job=\\\
+    \"proxmox-vms\\\"} / node_memory_MemTotal_bytes{job=\\\"proxmox-vms\\\"})\", \"\
+    legendFormat\": \"{{ vm_name }}\", \"refId\": \"A\" }],\n      \"title\": \"VM/Host\
+    \ Memory Usage\",\n      \"type\": \"timeseries\"\n    },\n    {\n      \"datasource\"\
+    : { \"type\": \"prometheus\", \"uid\": \"prometheus\" },\n      \"fieldConfig\"\
+    : {\n        \"defaults\": {\n          \"color\": { \"mode\": \"thresholds\"\
+    \ },\n          \"custom\": { \"align\": \"auto\", \"cellOptions\": { \"type\"\
+    : \"auto\" }, \"inspect\": false },\n          \"thresholds\": { \"mode\": \"\
+    absolute\", \"steps\": [{ \"color\": \"green\", \"value\": null }] }\n       \
+    \ },\n        \"overrides\": [\n          {\n            \"matcher\": { \"id\"\
+    : \"byName\", \"options\": \"Used %\" },\n            \"properties\": [\n    \
+    \          { \"id\": \"unit\", \"value\": \"percentunit\" },\n              {\
+    \ \"id\": \"custom.cellOptions\", \"value\": { \"mode\": \"gradient\", \"type\"\
+    : \"gauge\" } },\n              { \"id\": \"thresholds\", \"value\": { \"mode\"\
+    : \"absolute\", \"steps\": [{ \"color\": \"green\", \"value\": null }, { \"color\"\
+    : \"orange\", \"value\": 0.7 }, { \"color\": \"red\", \"value\": 0.9 }] } },\n\
+    \              { \"id\": \"max\", \"value\": 1 },\n              { \"id\": \"\
+    min\", \"value\": 0 }\n            ]\n          },\n          {\n            \"\
+    matcher\": { \"id\": \"byName\", \"options\": \"Size\" },\n            \"properties\"\
+    : [{ \"id\": \"unit\", \"value\": \"bytes\" }]\n          },\n          {\n  \
+    \          \"matcher\": { \"id\": \"byName\", \"options\": \"Available\" },\n\
+    \            \"properties\": [{ \"id\": \"unit\", \"value\": \"bytes\" }]\n  \
+    \        }\n        ]\n      },\n      \"gridPos\": { \"h\": 8, \"w\": 24, \"\
+    x\": 0, \"y\": 40 },\n      \"id\": 23,\n      \"options\": { \"footer\": { \"\
+    countRows\": false, \"fields\": \"\", \"reducer\": [\"sum\"] }, \"showHeader\"\
+    : true, \"sortBy\": [{ \"desc\": true, \"displayName\": \"Used %\" }] },\n   \
+    \   \"targets\": [\n        { \"expr\": \"node_filesystem_size_bytes{job=~\\\"\
+    proxmox-vms|k8s-nodes|unraid\\\",fstype!~\\\"tmpfs|overlay|fuse.shfs\\\",mountpoint!~\\\
+    \"/boot|/mnt$\\\"}\", \"format\": \"table\", \"instant\": true, \"refId\": \"\
+    size\" },\n        { \"expr\": \"node_filesystem_avail_bytes{job=~\\\"proxmox-vms|k8s-nodes|unraid\\\
+    \",fstype!~\\\"tmpfs|overlay|fuse.shfs\\\",mountpoint!~\\\"/boot|/mnt$\\\"}\"\
+    , \"format\": \"table\", \"instant\": true, \"refId\": \"avail\" }\n      ],\n\
+    \      \"title\": \"Disk Usage (All Hosts)\",\n      \"transformations\": [\n\
+    \        { \"id\": \"seriesToColumns\", \"options\": { \"byField\": \"instance\"\
+    \ } },\n        { \"id\": \"calculateField\", \"options\": { \"alias\": \"Used\
+    \ %\", \"binary\": { \"left\": \"Value #size\", \"operator\": \"-\", \"right\"\
+    : \"Value #avail\" }, \"mode\": \"binary\", \"reduce\": { \"reducer\": \"sum\"\
+    \ } } },\n        { \"id\": \"calculateField\", \"options\": { \"alias\": \"Used\
+    \ %\", \"binary\": { \"left\": \"Used %\", \"operator\": \"/\", \"right\": \"\
+    Value #size\" }, \"mode\": \"binary\", \"reduce\": { \"reducer\": \"sum\" }, \"\
+    replaceFields\": false } },\n        { \"id\": \"organize\", \"options\": { \"\
+    excludeByName\": { \"Time\": true, \"Time 1\": true, \"Time 2\": true, \"__name__\"\
+    : true, \"__name__ 1\": true, \"__name__ 2\": true, \"device 1\": true, \"device\
+    \ 2\": true, \"fstype 1\": true, \"fstype 2\": true, \"job 1\": true, \"job 2\"\
+    : true, \"mountpoint 2\": true, \"node 1\": true, \"node 2\": true, \"type 1\"\
+    : true, \"type 2\": true, \"vm_name 2\": true, \"role 1\": true, \"role 2\": true,\
+    \ \"service 1\": true, \"service 2\": true, \"Used % 1\": true }, \"renameByName\"\
+    : { \"Value #avail\": \"Available\", \"Value #size\": \"Size\", \"Used % 2\":\
+    \ \"Used %\", \"instance\": \"Host\", \"mountpoint 1\": \"Mount\", \"vm_name 1\"\
+    : \"Name\" } } }\n      ],\n      \"type\": \"table\"\n    },\n\n    {\n     \
+    \ \"collapsed\": false,\n      \"gridPos\": { \"h\": 1, \"w\": 24, \"x\": 0, \"\
+    y\": 48 },\n      \"id\": 30,\n      \"title\": \"Unraid Storage\",\n      \"\
+    type\": \"row\"\n    },\n    {\n      \"datasource\": { \"type\": \"prometheus\"\
+    , \"uid\": \"prometheus\" },\n      \"fieldConfig\": {\n        \"defaults\":\
+    \ {\n          \"color\": { \"mode\": \"thresholds\" },\n          \"thresholds\"\
+    : { \"mode\": \"absolute\", \"steps\": [{ \"color\": \"green\", \"value\": null\
+    \ }, { \"color\": \"orange\", \"value\": 0.7 }, { \"color\": \"red\", \"value\"\
+    : 0.9 }] },\n          \"unit\": \"percentunit\",\n          \"max\": 1,\n   \
+    \       \"min\": 0\n        }\n      },\n      \"gridPos\": { \"h\": 5, \"w\"\
+    : 8, \"x\": 0, \"y\": 49 },\n      \"id\": 31,\n      \"options\": { \"colorMode\"\
+    : \"background\", \"graphMode\": \"none\", \"justifyMode\": \"center\", \"orientation\"\
+    : \"horizontal\", \"reduceOptions\": { \"calcs\": [\"lastNotNull\"], \"fields\"\
+    : \"\", \"values\": false }, \"textMode\": \"auto\" },\n      \"targets\": [{\
+    \ \"expr\": \"1 - (node_filesystem_avail_bytes{job=\\\"unraid\\\",mountpoint=\\\
+    \"/mnt/user\\\"} / node_filesystem_size_bytes{job=\\\"unraid\\\",mountpoint=\\\
+    \"/mnt/user\\\"})\", \"legendFormat\": \"Array\", \"refId\": \"A\" }],\n     \
+    \ \"title\": \"Array Usage (11 TB)\",\n      \"type\": \"stat\"\n    },\n    {\n\
+    \      \"datasource\": { \"type\": \"prometheus\", \"uid\": \"prometheus\" },\n\
+    \      \"fieldConfig\": {\n        \"defaults\": {\n          \"color\": { \"\
+    mode\": \"thresholds\" },\n          \"thresholds\": { \"mode\": \"absolute\"\
+    , \"steps\": [{ \"color\": \"green\", \"value\": null }, { \"color\": \"orange\"\
+    , \"value\": 0.7 }, { \"color\": \"red\", \"value\": 0.9 }] },\n          \"unit\"\
+    : \"percentunit\",\n          \"max\": 1,\n          \"min\": 0\n        }\n \
+    \     },\n      \"gridPos\": { \"h\": 5, \"w\": 8, \"x\": 8, \"y\": 49 },\n  \
+    \    \"id\": 32,\n      \"options\": { \"colorMode\": \"background\", \"graphMode\"\
+    : \"none\", \"justifyMode\": \"center\", \"orientation\": \"horizontal\", \"reduceOptions\"\
+    : { \"calcs\": [\"lastNotNull\"], \"fields\": \"\", \"values\": false }, \"textMode\"\
+    : \"auto\" },\n      \"targets\": [{ \"expr\": \"1 - (node_filesystem_avail_bytes{job=\\\
+    \"unraid\\\",mountpoint=\\\"/mnt/cache\\\"} / node_filesystem_size_bytes{job=\\\
+    \"unraid\\\",mountpoint=\\\"/mnt/cache\\\"})\", \"legendFormat\": \"Cache\", \"\
+    refId\": \"A\" }],\n      \"title\": \"Cache Usage (2 TB)\",\n      \"type\":\
+    \ \"stat\"\n    },\n    {\n      \"datasource\": { \"type\": \"prometheus\", \"\
+    uid\": \"prometheus\" },\n      \"fieldConfig\": {\n        \"defaults\": {\n\
+    \          \"color\": { \"mode\": \"palette-classic\" },\n          \"custom\"\
+    : { \"axisCenteredZero\": false, \"axisLabel\": \"\", \"axisPlacement\": \"auto\"\
+    , \"barAlignment\": 0, \"drawStyle\": \"line\", \"fillOpacity\": 15, \"lineInterpolation\"\
+    : \"smooth\", \"lineWidth\": 2, \"pointSize\": 5, \"showPoints\": \"never\", \"\
+    stacking\": { \"group\": \"A\", \"mode\": \"none\" } },\n          \"unit\": \"\
+    Bps\"\n        }\n      },\n      \"gridPos\": { \"h\": 5, \"w\": 8, \"x\": 16,\
+    \ \"y\": 49 },\n      \"id\": 33,\n      \"options\": { \"legend\": { \"calcs\"\
+    : [], \"displayMode\": \"list\", \"placement\": \"bottom\" }, \"tooltip\": { \"\
+    mode\": \"multi\", \"sort\": \"desc\" } },\n      \"targets\": [\n        { \"\
+    expr\": \"rate(node_network_receive_bytes_total{job=\\\"unraid\\\",device=~\\\"\
+    eth0|bond0|br0\\\"}[5m])\", \"legendFormat\": \"Receive\", \"refId\": \"A\" },\n\
+    \        { \"expr\": \"-rate(node_network_transmit_bytes_total{job=\\\"unraid\\\
+    \",device=~\\\"eth0|bond0|br0\\\"}[5m])\", \"legendFormat\": \"Transmit\", \"\
+    refId\": \"B\" }\n      ],\n      \"title\": \"Unraid Network\",\n      \"type\"\
+    : \"timeseries\"\n    },\n\n    {\n      \"collapsed\": false,\n      \"gridPos\"\
+    : { \"h\": 1, \"w\": 24, \"x\": 0, \"y\": 54 },\n      \"id\": 40,\n      \"title\"\
+    : \"Network & Probes\",\n      \"type\": \"row\"\n    },\n    {\n      \"datasource\"\
+    : { \"type\": \"prometheus\", \"uid\": \"prometheus\" },\n      \"fieldConfig\"\
+    : {\n        \"defaults\": {\n          \"color\": { \"mode\": \"thresholds\"\
+    \ },\n          \"mappings\": [\n            { \"options\": { \"0\": { \"color\"\
+    : \"red\", \"text\": \"FAIL\" }, \"1\": { \"color\": \"green\", \"text\": \"OK\"\
+    \ } }, \"type\": \"value\" }\n          ],\n          \"thresholds\": { \"mode\"\
+    : \"absolute\", \"steps\": [{ \"color\": \"red\", \"value\": null }, { \"color\"\
+    : \"green\", \"value\": 1 }] }\n        }\n      },\n      \"gridPos\": { \"h\"\
+    : 4, \"w\": 24, \"x\": 0, \"y\": 55 },\n      \"id\": 41,\n      \"options\":\
+    \ { \"colorMode\": \"background\", \"graphMode\": \"none\", \"justifyMode\": \"\
+    center\", \"orientation\": \"auto\", \"reduceOptions\": { \"calcs\": [\"lastNotNull\"\
+    ], \"fields\": \"\", \"values\": false }, \"textMode\": \"auto\" },\n      \"\
+    targets\": [{ \"expr\": \"probe_success\", \"legendFormat\": \"{{ name }}\", \"\
+    refId\": \"A\" }],\n      \"title\": \"Blackbox Probe Status\",\n      \"type\"\
+    : \"stat\"\n    },\n    {\n      \"datasource\": { \"type\": \"prometheus\", \"\
+    uid\": \"prometheus\" },\n      \"fieldConfig\": {\n        \"defaults\": {\n\
+    \          \"color\": { \"mode\": \"palette-classic\" },\n          \"custom\"\
+    : { \"axisCenteredZero\": false, \"axisLabel\": \"\", \"axisPlacement\": \"auto\"\
+    , \"barAlignment\": 0, \"drawStyle\": \"line\", \"fillOpacity\": 10, \"lineInterpolation\"\
+    : \"smooth\", \"lineWidth\": 2, \"pointSize\": 5, \"showPoints\": \"never\", \"\
+    stacking\": { \"group\": \"A\", \"mode\": \"none\" } },\n          \"unit\": \"\
+    s\"\n        }\n      },\n      \"gridPos\": { \"h\": 7, \"w\": 12, \"x\": 0,\
+    \ \"y\": 59 },\n      \"id\": 42,\n      \"options\": { \"legend\": { \"calcs\"\
+    : [\"mean\", \"max\"], \"displayMode\": \"table\", \"placement\": \"right\" },\
+    \ \"tooltip\": { \"mode\": \"multi\", \"sort\": \"desc\" } },\n      \"targets\"\
+    : [{ \"expr\": \"probe_duration_seconds{job=\\\"blackbox-icmp\\\"}\", \"legendFormat\"\
+    : \"{{ name }}\", \"refId\": \"A\" }],\n      \"title\": \"ICMP Latency\",\n \
+    \     \"type\": \"timeseries\"\n    },\n    {\n      \"datasource\": { \"type\"\
+    : \"prometheus\", \"uid\": \"prometheus\" },\n      \"fieldConfig\": {\n     \
+    \   \"defaults\": {\n          \"color\": { \"mode\": \"palette-classic\" },\n\
+    \          \"custom\": { \"axisCenteredZero\": false, \"axisLabel\": \"\", \"\
+    axisPlacement\": \"auto\", \"barAlignment\": 0, \"drawStyle\": \"line\", \"fillOpacity\"\
+    : 10, \"lineInterpolation\": \"smooth\", \"lineWidth\": 2, \"pointSize\": 5, \"\
+    showPoints\": \"never\", \"stacking\": { \"group\": \"A\", \"mode\": \"none\"\
+    \ } },\n          \"unit\": \"s\"\n        }\n      },\n      \"gridPos\": { \"\
+    h\": 7, \"w\": 12, \"x\": 12, \"y\": 59 },\n      \"id\": 43,\n      \"options\"\
+    : { \"legend\": { \"calcs\": [\"mean\", \"max\"], \"displayMode\": \"table\",\
+    \ \"placement\": \"right\" }, \"tooltip\": { \"mode\": \"multi\", \"sort\": \"\
+    desc\" } },\n      \"targets\": [{ \"expr\": \"probe_duration_seconds{job=~\\\"\
+    blackbox-http|blackbox-http-ha\\\"}\", \"legendFormat\": \"{{ name }}\", \"refId\"\
+    : \"A\" }],\n      \"title\": \"HTTP Probe Duration\",\n      \"type\": \"timeseries\"\
+    \n    },\n\n    {\n      \"collapsed\": false,\n      \"gridPos\": { \"h\": 1,\
+    \ \"w\": 24, \"x\": 0, \"y\": 66 },\n      \"id\": 50,\n      \"title\": \"Current\
+    \ Alerts\",\n      \"type\": \"row\"\n    },\n    {\n      \"datasource\": { \"\
+    type\": \"prometheus\", \"uid\": \"prometheus\" },\n      \"fieldConfig\": {\n\
+    \        \"defaults\": {\n          \"color\": { \"mode\": \"thresholds\" },\n\
+    \          \"custom\": { \"align\": \"auto\", \"cellOptions\": { \"type\": \"\
+    auto\" }, \"inspect\": false },\n          \"thresholds\": { \"mode\": \"absolute\"\
+    , \"steps\": [{ \"color\": \"green\", \"value\": null }] }\n        },\n     \
+    \   \"overrides\": [\n          { \"matcher\": { \"id\": \"byName\", \"options\"\
+    : \"severity\" }, \"properties\": [{ \"id\": \"custom.cellOptions\", \"value\"\
+    : { \"mode\": \"basic\", \"type\": \"color-background\" } }, { \"id\": \"mappings\"\
+    , \"value\": [{ \"options\": { \"critical\": { \"color\": \"red\", \"text\": \"\
+    CRITICAL\" }, \"warning\": { \"color\": \"orange\", \"text\": \"WARNING\" } },\
+    \ \"type\": \"value\" }] }] }\n        ]\n      },\n      \"gridPos\": { \"h\"\
+    : 6, \"w\": 24, \"x\": 0, \"y\": 67 },\n      \"id\": 51,\n      \"options\":\
+    \ { \"footer\": { \"countRows\": false, \"fields\": \"\", \"reducer\": [\"sum\"\
+    ] }, \"showHeader\": true },\n      \"pluginVersion\": \"10.2.2\",\n      \"targets\"\
+    : [{ \"expr\": \"ALERTS{alertstate=\\\"firing\\\"}\", \"format\": \"table\", \"\
+    instant\": true, \"refId\": \"A\" }],\n      \"title\": \"Firing Alerts\",\n \
+    \     \"transformations\": [\n        { \"id\": \"organize\", \"options\": { \"\
+    excludeByName\": { \"Time\": true, \"Value\": true, \"__name__\": true, \"alertstate\"\
+    : true }, \"indexByName\": {}, \"renameByName\": {} } }\n      ],\n      \"type\"\
+    : \"table\"\n    }\n  ],\n  \"refresh\": \"30s\",\n  \"schemaVersion\": 38,\n\
+    \  \"style\": \"dark\",\n  \"tags\": [\"homelab\", \"infrastructure\"],\n  \"\
+    templating\": { \"list\": [] },\n  \"time\": { \"from\": \"now-1h\", \"to\": \"\
+    now\" },\n  \"timepicker\": {},\n  \"timezone\": \"browser\",\n  \"title\": \"\
+    Homelab Overview\",\n  \"uid\": \"homelab-overview\",\n  \"version\": 1\n}\n"
+  logs-explorer.json: "{\n  \"annotations\": { \"list\": [] },\n  \"editable\": true,\n\
+    \  \"fiscalYearStartMonth\": 0,\n  \"graphTooltip\": 1,\n  \"id\": null,\n  \"\
+    links\": [\n    { \"asDropdown\": false, \"icon\": \"external link\", \"includeVars\"\
+    : false, \"keepTime\": true, \"tags\": [], \"targetBlank\": false, \"title\":\
+    \ \"Overview\", \"type\": \"link\", \"url\": \"/d/homelab-overview\" }\n  ],\n\
+    \  \"liveNow\": false,\n  \"panels\": [\n    {\n      \"collapsed\": false,\n\
+    \      \"gridPos\": { \"h\": 1, \"w\": 24, \"x\": 0, \"y\": 0 },\n      \"id\"\
+    : 1,\n      \"title\": \"Log Volume\",\n      \"type\": \"row\"\n    },\n    {\n\
+    \      \"datasource\": { \"type\": \"loki\", \"uid\": \"loki\" },\n      \"fieldConfig\"\
+    : {\n        \"defaults\": {\n          \"color\": { \"mode\": \"palette-classic\"\
+    \ },\n          \"custom\": { \"axisCenteredZero\": false, \"axisLabel\": \"\"\
+    , \"axisPlacement\": \"auto\", \"barAlignment\": 0, \"drawStyle\": \"bars\", \"\
+    fillOpacity\": 50, \"lineWidth\": 1, \"pointSize\": 5, \"showPoints\": \"never\"\
+    , \"stacking\": { \"group\": \"A\", \"mode\": \"normal\" } },\n          \"unit\"\
+    : \"short\"\n        }\n      },\n      \"gridPos\": { \"h\": 6, \"w\": 24, \"\
+    x\": 0, \"y\": 1 },\n      \"id\": 2,\n      \"options\": { \"legend\": { \"calcs\"\
+    : [], \"displayMode\": \"list\", \"placement\": \"right\" }, \"tooltip\": { \"\
+    mode\": \"multi\", \"sort\": \"desc\" } },\n      \"targets\": [\n        { \"\
+    expr\": \"sum by (namespace) (count_over_time({namespace=~\\\"$namespace\\\"}\
+    \ [$__interval]))\", \"legendFormat\": \"{{ namespace }}\", \"refId\": \"A\" },\n\
+    \        { \"expr\": \"sum by (host) (count_over_time({host=~\\\"$host\\\"} [$__interval]))\"\
+    , \"legendFormat\": \"{{ host }}\", \"refId\": \"B\" }\n      ],\n      \"title\"\
+    : \"Log Volume\",\n      \"type\": \"timeseries\"\n    },\n    {\n      \"datasource\"\
+    : { \"type\": \"loki\", \"uid\": \"loki\" },\n      \"fieldConfig\": {\n     \
+    \   \"defaults\": {\n          \"color\": { \"mode\": \"palette-classic\" },\n\
+    \          \"custom\": { \"axisCenteredZero\": false, \"axisLabel\": \"\", \"\
+    axisPlacement\": \"auto\", \"barAlignment\": 0, \"drawStyle\": \"bars\", \"fillOpacity\"\
+    : 80, \"lineWidth\": 1, \"pointSize\": 5, \"showPoints\": \"never\", \"stacking\"\
+    : { \"group\": \"A\", \"mode\": \"normal\" } },\n          \"unit\": \"short\"\
+    \n        }\n      },\n      \"gridPos\": { \"h\": 5, \"w\": 24, \"x\": 0, \"\
+    y\": 7 },\n      \"id\": 3,\n      \"options\": { \"legend\": { \"calcs\": [],\
+    \ \"displayMode\": \"list\", \"placement\": \"right\" }, \"tooltip\": { \"mode\"\
+    : \"multi\", \"sort\": \"desc\" } },\n      \"targets\": [\n        { \"expr\"\
+    : \"sum by (level) (count_over_time({namespace=~\\\"$namespace\\\",pod=~\\\"$pod\\\
+    \"} | json | level != \\\"\\\" [$__interval]))\", \"legendFormat\": \"{{ level\
+    \ }}\", \"refId\": \"A\" }\n      ],\n      \"title\": \"Log Levels (K8s \u2014\
+    \ JSON logs only)\",\n      \"type\": \"timeseries\"\n    },\n    {\n      \"\
+    collapsed\": false,\n      \"gridPos\": { \"h\": 1, \"w\": 24, \"x\": 0, \"y\"\
+    : 12 },\n      \"id\": 10,\n      \"title\": \"Kubernetes Logs\",\n      \"type\"\
+    : \"row\"\n    },\n    {\n      \"datasource\": { \"type\": \"loki\", \"uid\"\
+    : \"loki\" },\n      \"gridPos\": { \"h\": 15, \"w\": 24, \"x\": 0, \"y\": 13\
+    \ },\n      \"id\": 11,\n      \"options\": {\n        \"dedupStrategy\": \"none\"\
+    ,\n        \"enableLogDetails\": true,\n        \"prettifyLogMessage\": true,\n\
+    \        \"showCommonLabels\": false,\n        \"showLabels\": false,\n      \
+    \  \"showTime\": true,\n        \"sortOrder\": \"Descending\",\n        \"wrapLogMessage\"\
+    : true\n      },\n      \"targets\": [\n        { \"expr\": \"{namespace=~\\\"\
+    $namespace\\\",pod=~\\\"$pod\\\",container=~\\\"$container\\\"} |~ \\\"$search\\\
+    \"\", \"refId\": \"A\" }\n      ],\n      \"title\": \"K8s Pod Logs\",\n     \
+    \ \"type\": \"logs\"\n    },\n    {\n      \"collapsed\": true,\n      \"gridPos\"\
+    : { \"h\": 1, \"w\": 24, \"x\": 0, \"y\": 28 },\n      \"id\": 20,\n      \"title\"\
+    : \"Infrastructure Host Logs\",\n      \"type\": \"row\",\n      \"panels\": [\n\
+    \        {\n          \"datasource\": { \"type\": \"loki\", \"uid\": \"loki\"\
+    \ },\n          \"gridPos\": { \"h\": 15, \"w\": 24, \"x\": 0, \"y\": 29 },\n\
+    \          \"id\": 21,\n          \"options\": {\n            \"dedupStrategy\"\
+    : \"none\",\n            \"enableLogDetails\": true,\n            \"prettifyLogMessage\"\
+    : true,\n            \"showCommonLabels\": false,\n            \"showLabels\"\
+    : false,\n            \"showTime\": true,\n            \"sortOrder\": \"Descending\"\
+    ,\n            \"wrapLogMessage\": true\n          },\n          \"targets\":\
+    \ [\n            { \"expr\": \"{host=~\\\"$host\\\",job=~\\\"$job\\\"} |~ \\\"\
+    $search\\\"\", \"refId\": \"A\" }\n          ],\n          \"title\": \"Host Logs\"\
+    ,\n          \"type\": \"logs\"\n        }\n      ]\n    },\n    {\n      \"collapsed\"\
+    : true,\n      \"gridPos\": { \"h\": 1, \"w\": 24, \"x\": 0, \"y\": 44 },\n  \
+    \    \"id\": 30,\n      \"title\": \"Security \u2014 SSH & Auth\",\n      \"type\"\
+    : \"row\",\n      \"panels\": [\n        {\n          \"datasource\": { \"type\"\
+    : \"loki\", \"uid\": \"loki\" },\n          \"fieldConfig\": {\n            \"\
+    defaults\": {\n              \"color\": { \"mode\": \"palette-classic\" },\n \
+    \             \"custom\": { \"axisCenteredZero\": false, \"axisLabel\": \"\",\
+    \ \"axisPlacement\": \"auto\", \"barAlignment\": 0, \"drawStyle\": \"bars\", \"\
+    fillOpacity\": 80, \"lineWidth\": 1, \"pointSize\": 5, \"showPoints\": \"never\"\
+    , \"stacking\": { \"group\": \"A\", \"mode\": \"normal\" } },\n              \"\
+    unit\": \"short\"\n            }\n          },\n          \"gridPos\": { \"h\"\
+    : 6, \"w\": 24, \"x\": 0, \"y\": 45 },\n          \"id\": 31,\n          \"options\"\
+    : { \"legend\": { \"calcs\": [], \"displayMode\": \"list\", \"placement\": \"\
+    right\" }, \"tooltip\": { \"mode\": \"multi\", \"sort\": \"desc\" } },\n     \
+    \     \"targets\": [\n            { \"expr\": \"sum by (host) (count_over_time({job=\\\
+    \"auth\\\"} |= \\\"Failed password\\\" [$__interval]))\", \"legendFormat\": \"\
+    {{ host }}\", \"refId\": \"A\" }\n          ],\n          \"title\": \"Failed\
+    \ SSH Logins by Host\",\n          \"type\": \"timeseries\"\n        },\n    \
+    \    {\n          \"datasource\": { \"type\": \"loki\", \"uid\": \"loki\" },\n\
+    \          \"gridPos\": { \"h\": 12, \"w\": 24, \"x\": 0, \"y\": 51 },\n     \
+    \     \"id\": 32,\n          \"options\": {\n            \"dedupStrategy\": \"\
+    none\",\n            \"enableLogDetails\": true,\n            \"prettifyLogMessage\"\
+    : false,\n            \"showCommonLabels\": false,\n            \"showLabels\"\
+    : true,\n            \"showTime\": true,\n            \"sortOrder\": \"Descending\"\
+    ,\n            \"wrapLogMessage\": true\n          },\n          \"targets\":\
+    \ [\n            { \"expr\": \"{job=\\\"auth\\\"} |~ \\\"Failed|Accepted|Invalid\\\
+    \"\", \"refId\": \"A\" }\n          ],\n          \"title\": \"Auth Log Events\"\
+    ,\n          \"type\": \"logs\"\n        }\n      ]\n    },\n    {\n      \"collapsed\"\
+    : true,\n      \"gridPos\": { \"h\": 1, \"w\": 24, \"x\": 0, \"y\": 63 },\n  \
+    \    \"id\": 40,\n      \"title\": \"Errors Across All Sources\",\n      \"type\"\
+    : \"row\",\n      \"panels\": [\n        {\n          \"datasource\": { \"type\"\
+    : \"loki\", \"uid\": \"loki\" },\n          \"gridPos\": { \"h\": 15, \"w\": 24,\
+    \ \"x\": 0, \"y\": 64 },\n          \"id\": 41,\n          \"options\": {\n  \
+    \          \"dedupStrategy\": \"none\",\n            \"enableLogDetails\": true,\n\
+    \            \"prettifyLogMessage\": true,\n            \"showCommonLabels\":\
+    \ false,\n            \"showLabels\": true,\n            \"showTime\": true,\n\
+    \            \"sortOrder\": \"Descending\",\n            \"wrapLogMessage\": true\n\
+    \          },\n          \"targets\": [\n            { \"expr\": \"{namespace=~\\\
+    \"$namespace\\\"} |~ \\\"(?i)error|exception|panic|fatal\\\" !~ \\\"(?i)healthcheck|readiness|liveness\\\
+    \"\", \"refId\": \"A\" }\n          ],\n          \"title\": \"Errors (K8s)\"\
+    ,\n          \"type\": \"logs\"\n        }\n      ]\n    }\n  ],\n  \"refresh\"\
+    : \"10s\",\n  \"schemaVersion\": 38,\n  \"style\": \"dark\",\n  \"tags\": [\"\
+    homelab\", \"logs\"],\n  \"templating\": {\n    \"list\": [\n      {\n       \
+    \ \"current\": { \"selected\": false, \"text\": \"All\", \"value\": \"$__all\"\
+    \ },\n        \"datasource\": { \"type\": \"loki\", \"uid\": \"loki\" },\n   \
+    \     \"definition\": \"label_values(namespace)\",\n        \"includeAll\": true,\n\
+    \        \"multi\": true,\n        \"name\": \"namespace\",\n        \"query\"\
+    : \"label_values(namespace)\",\n        \"refresh\": 2,\n        \"type\": \"\
+    query\"\n      },\n      {\n        \"current\": { \"selected\": false, \"text\"\
+    : \"All\", \"value\": \"$__all\" },\n        \"datasource\": { \"type\": \"loki\"\
+    , \"uid\": \"loki\" },\n        \"definition\": \"label_values({namespace=~\\\"\
+    $namespace\\\"},pod)\",\n        \"includeAll\": true,\n        \"multi\": true,\n\
+    \        \"name\": \"pod\",\n        \"query\": \"label_values({namespace=~\\\"\
+    $namespace\\\"},pod)\",\n        \"refresh\": 2,\n        \"type\": \"query\"\n\
+    \      },\n      {\n        \"current\": { \"selected\": false, \"text\": \"All\"\
+    , \"value\": \"$__all\" },\n        \"datasource\": { \"type\": \"loki\", \"uid\"\
+    : \"loki\" },\n        \"definition\": \"label_values({namespace=~\\\"$namespace\\\
+    \",pod=~\\\"$pod\\\"},container)\",\n        \"includeAll\": true,\n        \"\
+    multi\": true,\n        \"name\": \"container\",\n        \"query\": \"label_values({namespace=~\\\
+    \"$namespace\\\",pod=~\\\"$pod\\\"},container)\",\n        \"refresh\": 2,\n \
+    \       \"type\": \"query\"\n      },\n      {\n        \"current\": { \"selected\"\
+    : false, \"text\": \"All\", \"value\": \"$__all\" },\n        \"datasource\":\
+    \ { \"type\": \"loki\", \"uid\": \"loki\" },\n        \"definition\": \"label_values(host)\"\
+    ,\n        \"includeAll\": true,\n        \"multi\": true,\n        \"name\":\
+    \ \"host\",\n        \"query\": \"label_values(host)\",\n        \"refresh\":\
+    \ 2,\n        \"type\": \"query\"\n      },\n      {\n        \"current\": { \"\
+    selected\": false, \"text\": \"All\", \"value\": \"$__all\" },\n        \"datasource\"\
+    : { \"type\": \"loki\", \"uid\": \"loki\" },\n        \"definition\": \"label_values({host=~\\\
+    \"$host\\\"},job)\",\n        \"includeAll\": true,\n        \"multi\": true,\n\
+    \        \"name\": \"job\",\n        \"query\": \"label_values({host=~\\\"$host\\\
+    \"},job)\",\n        \"refresh\": 2,\n        \"type\": \"query\"\n      },\n\
+    \      {\n        \"current\": { \"selected\": false, \"text\": \"\", \"value\"\
+    : \"\" },\n        \"name\": \"search\",\n        \"type\": \"textbox\",\n   \
+    \     \"label\": \"Search\"\n      }\n    ]\n  },\n  \"time\": { \"from\": \"\
+    now-1h\", \"to\": \"now\" },\n  \"timepicker\": {},\n  \"timezone\": \"browser\"\
+    ,\n  \"title\": \"Logs Explorer\",\n  \"uid\": \"logs-explorer\",\n  \"version\"\
+    : 1\n}\n"
+kind: ConfigMap
+metadata:
+  name: grafana-dashboards
+  namespace: monitoring

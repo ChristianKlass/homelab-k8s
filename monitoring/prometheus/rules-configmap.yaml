@@ -1,0 +1,201 @@
+apiVersion: v1
+data:
+  alerts.yml: |
+    groups:
+      - name: infrastructure
+        interval: 1m
+        rules:
+          - alert: NodeDown
+            expr: up{job="proxmox-vms"} == 0
+            for: 2m
+            labels:
+              severity: critical
+              category: down
+            annotations:
+              summary: "{{ $labels.vm_name }}"
+
+          - alert: HomeAssistantDown
+            expr: up{job="homeassistant"} == 0
+            for: 2m
+            labels:
+              severity: critical
+              category: down
+            annotations:
+              summary: "Home Assistant"
+
+          - alert: UnraidDown
+            expr: up{job="unraid"} == 0
+            for: 2m
+            labels:
+              severity: critical
+              category: down
+            annotations:
+              summary: "Unraid NAS"
+
+          - alert: N8nDown
+            expr: up{job="n8n"} == 0
+            for: 1m
+            labels:
+              severity: critical
+              category: down
+            annotations:
+              summary: "n8n"
+
+          - alert: ProxmoxHostDown
+            expr: up{vm_name=~"prox01|prox02"} == 0
+            for: 3m
+            labels:
+              severity: critical
+              category: down
+            annotations:
+              summary: "{{ $labels.vm_name }}"
+
+          - alert: BlackboxProbeFailed
+            expr: probe_success{job=~"blackbox-icmp|blackbox-http|blackbox-http-ha"} == 0
+            for: 3m
+            labels:
+              severity: critical
+              category: down
+            annotations:
+              summary: "{{ $labels.name }}"
+
+      - name: kubernetes
+        interval: 1m
+        rules:
+          - alert: KubernetesNodeNotReady
+            expr: kube_node_status_condition{condition="Ready",status="true"} == 0
+            for: 5m
+            labels:
+              severity: critical
+              category: down
+            annotations:
+              summary: "K8s node {{ $labels.node }}"
+
+          - alert: KubernetesPodCrashLooping
+            expr: increase(kube_pod_container_status_restarts_total[1h]) > 5
+            for: 5m
+            labels:
+              severity: warning
+              category: pod
+            annotations:
+              summary: "{{ $labels.namespace }}/{{ $labels.pod }} crashlooping"
+
+          - alert: KubernetesPodNotHealthy
+            expr: sum by (namespace, pod) (kube_pod_status_phase{phase=~"Pending|Unknown|Failed"}) > 0
+            for: 15m
+            labels:
+              severity: warning
+              category: pod
+            annotations:
+              summary: "{{ $labels.namespace }}/{{ $labels.pod }} not healthy"
+
+      - name: resources
+        interval: 1m
+        rules:
+          - alert: HighCPUUsage
+            expr: 100 - (avg by(instance, vm_name) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 85
+            for: 10m
+            labels:
+              severity: warning
+              category: resource
+            annotations:
+              summary: "{{ if $labels.vm_name }}{{ $labels.vm_name }}{{ else }}{{ $labels.instance }}{{ end }} CPU {{ $value | printf \"%.0f\" }}%"
+
+          - alert: HighMemoryUsage
+            expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 90
+            for: 10m
+            labels:
+              severity: warning
+              category: resource
+            annotations:
+              summary: "{{ if $labels.vm_name }}{{ $labels.vm_name }}{{ else }}{{ $labels.instance }}{{ end }} memory {{ $value | printf \"%.0f\" }}%"
+
+          - alert: DiskSpaceLow
+            expr: (node_filesystem_avail_bytes{fstype!~"tmpfs|overlay"} / node_filesystem_size_bytes{fstype!~"tmpfs|overlay"}) * 100 < 15
+            for: 10m
+            labels:
+              severity: warning
+              category: resource
+            annotations:
+              summary: "{{ if $labels.vm_name }}{{ $labels.vm_name }}{{ else }}{{ $labels.instance }}{{ end }} disk {{ $value | printf \"%.0f\" }}% free"
+
+          - alert: DiskSpaceCritical
+            expr: (node_filesystem_avail_bytes{fstype!~"tmpfs|overlay"} / node_filesystem_size_bytes{fstype!~"tmpfs|overlay"}) * 100 < 5
+            for: 5m
+            labels:
+              severity: critical
+              category: resource
+            annotations:
+              summary: "{{ if $labels.vm_name }}{{ $labels.vm_name }}{{ else }}{{ $labels.instance }}{{ end }} disk {{ $value | printf \"%.0f\" }}% free"
+
+      # Longhorn storage — catches disk-fill / snapshot accretion at the storage layer
+      # (robustness: 1=healthy, 2=degraded, 3=faulted)
+      - name: longhorn
+        interval: 1m
+        rules:
+          - alert: LonghornNodeStorageLow
+            expr: (longhorn_node_storage_usage_bytes / longhorn_node_storage_capacity_bytes) * 100 > 80
+            for: 10m
+            labels:
+              severity: warning
+              category: storage
+            annotations:
+              summary: "Longhorn node {{ $labels.node }} storage {{ $value | printf \"%.0f\" }}% used"
+
+          - alert: LonghornNodeStorageCritical
+            expr: (longhorn_node_storage_usage_bytes / longhorn_node_storage_capacity_bytes) * 100 > 90
+            for: 5m
+            labels:
+              severity: critical
+              category: storage
+            annotations:
+              summary: "Longhorn node {{ $labels.node }} storage {{ $value | printf \"%.0f\" }}% used"
+
+          - alert: LonghornVolumeNearCapacity
+            expr: (longhorn_volume_actual_size_bytes / longhorn_volume_capacity_bytes) * 100 > 90
+            for: 30m
+            labels:
+              severity: warning
+              category: storage
+            annotations:
+              summary: "Longhorn volume {{ $labels.volume }} at {{ $value | printf \"%.0f\" }}% of capacity on disk (snapshot bloat or near-full)"
+
+          - alert: LonghornVolumeFaulted
+            expr: longhorn_volume_robustness == 3
+            for: 1m
+            labels:
+              severity: critical
+              category: storage
+            annotations:
+              summary: "Longhorn volume {{ $labels.volume }} is FAULTED — data unavailable"
+
+          - alert: LonghornVolumeDegraded
+            expr: longhorn_volume_robustness == 2
+            for: 15m
+            labels:
+              severity: warning
+              category: storage
+            annotations:
+              summary: "Longhorn volume {{ $labels.volume }} degraded — replica unhealthy"
+
+          - alert: LonghornSnapshotAccretion
+            expr: count by (volume) (longhorn_snapshot_actual_size_bytes) > 10
+            for: 1h
+            labels:
+              severity: warning
+              category: storage
+            annotations:
+              summary: "Longhorn volume {{ $labels.volume }} has {{ $value | printf \"%.0f\" }} snapshots — retention may not be pruning"
+
+          - alert: LonghornManagerDown
+            expr: up{job="longhorn"} == 0
+            for: 10m
+            labels:
+              severity: warning
+              category: storage
+            annotations:
+              summary: "Longhorn manager metrics target {{ $labels.instance }} down"
+kind: ConfigMap
+metadata:
+  name: prometheus-rules
+  namespace: monitoring

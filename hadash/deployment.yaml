@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: hadash
+  name: hadash
+  namespace: hadash
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hadash
+  template:
+    metadata:
+      labels:
+        app: hadash
+    spec:
+      containers:
+      - name: nginx
+        image: registry.markklass.dev/markklass/hadash:main-1784544617-bafafa17 # {"$imagepolicy": "flux-system:hadash"}
+        imagePullPolicy: Always
+        env:
+        - name: TZ
+          value: Asia/Singapore
+        envFrom:
+        - secretRef:
+            name: hadash-config
+        ports:
+        - containerPort: 80
+          protocol: TCP
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 10
+          periodSeconds: 30
+          timeoutSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          timeoutSeconds: 5
+        resources:
+          requests:
+            cpu: 50m
+            memory: 32Mi
+          limits:
+            cpu: 100m
+            memory: 64Mi
+      imagePullSecrets:
+      - name: gitlab-registry
+      restartPolicy: Always

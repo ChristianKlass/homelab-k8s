@@ -1,0 +1,265 @@
+apiVersion: v1
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 30s
+      evaluation_interval: 30s
+      external_labels:
+        cluster: homelab
+        environment: production
+
+    rule_files:
+      - /etc/prometheus/rules/*.yml
+
+    alerting:
+      alertmanagers:
+        - static_configs:
+            - targets:
+                - alertmanager:9093
+
+    scrape_configs:
+      # Prometheus self-monitoring
+      - job_name: 'prometheus'
+        static_configs:
+          - targets: ['localhost:9090']
+
+      # Kubernetes API server
+      - job_name: 'kubernetes-apiservers'
+        kubernetes_sd_configs:
+          - role: endpoints
+        scheme: https
+        tls_config:
+          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+        bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_namespace, __meta_kubernetes_service_name, __meta_kubernetes_endpoint_port_name]
+            action: keep
+            regex: default;kubernetes;https
+
+      # Kubernetes nodes (kubelet)
+      - job_name: 'kubernetes-nodes'
+        kubernetes_sd_configs:
+          - role: node
+        scheme: https
+        tls_config:
+          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+          insecure_skip_verify: true
+        bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+        relabel_configs:
+          - action: labelmap
+            regex: __meta_kubernetes_node_label_(.+)
+
+      # Kubernetes nodes cadvisor (container metrics)
+      - job_name: 'kubernetes-cadvisor'
+        kubernetes_sd_configs:
+          - role: node
+        scheme: https
+        tls_config:
+          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+          insecure_skip_verify: true
+        bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+        metrics_path: /metrics/cadvisor
+        relabel_configs:
+          - action: labelmap
+            regex: __meta_kubernetes_node_label_(.+)
+
+      # Kubernetes pods with prometheus.io annotations
+      - job_name: 'kubernetes-pods'
+        kubernetes_sd_configs:
+          - role: pod
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+            action: keep
+            regex: true
+          - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+            action: replace
+            target_label: __metrics_path__
+            regex: (.+)
+          - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+            action: replace
+            regex: ([^:]+)(?::\d+)?;(\d+)
+            replacement: $1:$2
+            target_label: __address__
+          - action: labelmap
+            regex: __meta_kubernetes_pod_label_(.+)
+          - source_labels: [__meta_kubernetes_namespace]
+            action: replace
+            target_label: kubernetes_namespace
+          - source_labels: [__meta_kubernetes_pod_name]
+            action: replace
+            target_label: kubernetes_pod_name
+
+      # Kubernetes services with prometheus.io annotations
+      - job_name: 'kubernetes-services'
+        kubernetes_sd_configs:
+          - role: service
+        metrics_path: /probe
+        params:
+          module: [http_2xx]
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_probe]
+            action: keep
+            regex: true
+          - source_labels: [__address__]
+            target_label: __param_target
+          - target_label: __address__
+            replacement: blackbox-exporter:9115
+          - source_labels: [__param_target]
+            target_label: instance
+          - action: labelmap
+            regex: __meta_kubernetes_service_label_(.+)
+          - source_labels: [__meta_kubernetes_namespace]
+            target_label: kubernetes_namespace
+          - source_labels: [__meta_kubernetes_service_name]
+            target_label: kubernetes_name
+
+      # Proxmox hosts (auto-discovered via file_sd) — covers forge + all VMs/LXCs
+      - job_name: 'proxmox-hosts'
+        file_sd_configs:
+          - files:
+              - /etc/prometheus/file_sd/proxmox_targets.json
+            refresh_interval: 1m
+        relabel_configs:
+          - source_labels: [__address__]
+            target_label: instance
+          - source_labels: [name]
+            target_label: vm_name
+
+      # Kubernetes nodes
+      - job_name: 'k8s-nodes'
+        static_configs:
+          - targets: ['10.0.0.30:9100']
+            labels:
+              vm_name: k8s-control-01
+              role: control-plane
+          - targets: ['10.0.0.31:9100']
+            labels:
+              vm_name: k8s-worker-01
+              role: worker
+          - targets: ['10.0.0.34:9100']
+            labels:
+              vm_name: dev-workspace
+              role: workstation
+              type: physical
+
+      # Home Assistant
+      - job_name: 'homeassistant'
+        metrics_path: /api/prometheus
+        bearer_token_file: /etc/prometheus/secrets/homeassistant_token
+        static_configs:
+          - targets: ['10.0.0.2:8123']
+            labels:
+              service: homeassistant
+              type: infrastructure
+
+      # Unraid node_exporter
+      - job_name: 'unraid'
+        static_configs:
+          - targets: ['10.0.0.3:9100']
+            labels:
+              service: unraid
+              type: nas
+
+      # Unraid smartctl_exporter (SMART / disk health)
+      - job_name: 'unraid-smart'
+        static_configs:
+          - targets: ['10.0.0.3:9633']
+            labels:
+              service: unraid
+              type: nas
+
+      # Alertmanager
+      - job_name: 'alertmanager'
+        static_configs:
+          - targets: ['alertmanager:9093']
+
+      # n8n automation platform (critical for alerting)
+      - job_name: 'n8n'
+        metrics_path: /metrics
+        static_configs:
+          - targets: ['n8n.notifications.svc.cluster.local:80']
+            labels:
+              service: n8n
+              type: automation
+              critical: 'true'
+
+      # ICMP probes via blackbox exporter
+      - job_name: 'blackbox-icmp'
+        metrics_path: /probe
+        params:
+          module: [icmp_probe]
+        scrape_interval: 30s
+        static_configs:
+          - targets: ['10.0.0.1']
+            labels:
+              name: router
+          - targets: ['1.1.1.1']
+            labels:
+              name: internet
+        relabel_configs:
+          - source_labels: [__address__]
+            target_label: __param_target
+          - source_labels: [__param_target]
+            target_label: instance
+          - target_label: __address__
+            replacement: blackbox-exporter:9115
+
+      # HTTP probes via blackbox exporter
+      - job_name: 'blackbox-http'
+        metrics_path: /probe
+        params:
+          module: [http_2xx]
+        scrape_interval: 30s
+        static_configs:
+          - targets: ['http://10.0.0.17']
+            labels:
+              name: gitlab
+        relabel_configs:
+          - source_labels: [__address__]
+            target_label: __param_target
+          - source_labels: [__param_target]
+            target_label: instance
+          - target_label: __address__
+            replacement: blackbox-exporter:9115
+
+      # Home Assistant HTTP probe (accepts 200 or 401)
+      - job_name: 'blackbox-http-ha'
+        metrics_path: /probe
+        params:
+          module: [http_2xx_or_401]
+        scrape_interval: 30s
+        static_configs:
+          - targets: ['http://10.0.0.2:8123']
+            labels:
+              name: home-assistant
+        relabel_configs:
+          - source_labels: [__address__]
+            target_label: __param_target
+          - source_labels: [__param_target]
+            target_label: instance
+          - target_label: __address__
+            replacement: blackbox-exporter:9115
+
+      # Longhorn storage — manager metrics (:9500): volume capacity/robustness, node storage, snapshots
+      - job_name: 'longhorn'
+        kubernetes_sd_configs:
+          - role: endpoints
+            namespaces:
+              names: ['longhorn-system']
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_service_name]
+            action: keep
+            regex: longhorn-backend
+          - source_labels: [__address__]    # manager pod backs several ports; only :9500 serves metrics
+            action: keep
+            regex: .*:9500
+          - source_labels: [__meta_kubernetes_pod_node_name]
+            target_label: node
+          - target_label: service
+            replacement: longhorn
+          - target_label: type
+            replacement: storage
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+  namespace: monitoring

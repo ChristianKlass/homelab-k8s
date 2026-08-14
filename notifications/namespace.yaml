@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: notifications
+  labels:
+    name: notifications
+    purpose: centralized-notification-system

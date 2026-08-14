@@ -1,0 +1,270 @@
+apiVersion: v1
+data:
+  discover.py: |
+    #!/usr/bin/env python3 -u
+    """
+    Proxmox VM/LXC/Hypervisor Discovery for Prometheus
+
+    Queries Proxmox API to discover running VMs, LXCs, and hypervisor nodes,
+    extracts their IP addresses, and writes Prometheus file_sd targets.
+    """
+
+    import json
+    import os
+    import re
+    import sys
+    import time
+    import requests
+    import urllib3
+
+    # Force unbuffered output
+    sys.stdout.reconfigure(line_buffering=True)
+    sys.stderr.reconfigure(line_buffering=True)
+
+    # Disable SSL warnings for self-signed certs
+    urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+    DISCOVERY_INTERVAL = 300  # 5 minutes
+    OUTPUT_FILE = "/etc/prometheus/file_sd/proxmox_targets.json"
+    NODE_EXPORTER_PORT = 9100
+    HOMELAB_SUBNET = re.compile(r"^192\.168\.50\.\d{1,3}$")
+
+    def get_proxmox_hosts():
+        """Parse comma-separated Proxmox hosts from env"""
+        hosts = os.environ.get("PROXMOX_HOSTS", "")
+        return [h.strip() for h in hosts.split(",") if h.strip()]
+
+    def get_auth_header():
+        """Build Proxmox API authentication header"""
+        token_id = os.environ.get("PROXMOX_TOKEN_ID", "")
+        token_secret = os.environ.get("PROXMOX_TOKEN_SECRET", "")
+        if not token_id or not token_secret:
+            return None
+        return {"Authorization": f"PVEAPIToken={token_id}={token_secret}"}
+
+    def query_proxmox(host, endpoint, headers):
+        """Query Proxmox API endpoint"""
+        url = f"{host}/api2/json{endpoint}"
+        try:
+            response = requests.get(url, headers=headers, verify=False, timeout=10)
+            response.raise_for_status()
+            return response.json().get("data", [])
+        except Exception as e:
+            print(f"Error querying {url}: {e}")
+            return []
+
+    def get_vm_ip(host, headers, node, vmid, name, vm_type):
+        """Get IP address for a VM or LXC"""
+        if vm_type == "qemu":
+            # Try QEMU guest agent first - match any non-loopback interface with homelab IP
+            endpoint = f"/nodes/{node}/qemu/{vmid}/agent/network-get-interfaces"
+            data = query_proxmox(host, endpoint, headers)
+            # Guest agent returns {result: [...]} — unwrap if needed
+            if isinstance(data, dict):
+                data = data.get("result", [])
+            if isinstance(data, list):
+                for iface in data:
+                    if not isinstance(iface, dict):
+                        continue
+                    iface_name = iface.get("name", "")
+                    # Skip loopback
+                    if iface_name == "lo":
+                        continue
+                    for addr in iface.get("ip-addresses", []):
+                        if isinstance(addr, dict) and addr.get("ip-address-type") == "ipv4":
+                            ip = addr.get("ip-address")
+                            if ip and HOMELAB_SUBNET.match(ip):
+                                return ip
+
+            # Fallback: parse cloud-init ipconfig0 from VM config
+            config_endpoint = f"/nodes/{node}/qemu/{vmid}/config"
+            config_data = query_proxmox(host, config_endpoint, headers)
+            if isinstance(config_data, dict):
+                ipconfig0 = config_data.get("ipconfig0", "")
+                if ipconfig0:
+                    # Parse: ip=10.0.0.x/24,gw=10.0.0.1
+                    for part in str(ipconfig0).split(","):
+                        if part.startswith("ip="):
+                            ip = part.split("=")[1].split("/")[0]
+                            if ip and HOMELAB_SUBNET.match(ip):
+                                print(f"    WARNING: {name} (VMID {vmid}) - using cloud-init IP (no guest agent)")
+                                return ip
+
+            print(f"    WARNING: VM {name} (VMID {vmid}) - no discoverable IP via guest agent or cloud-init")
+            return None
+
+        elif vm_type == "lxc":
+            # Get LXC config for network
+            endpoint = f"/nodes/{node}/lxc/{vmid}/config"
+            data = query_proxmox(host, endpoint, headers)
+            if isinstance(data, dict):
+                for key, value in data.items():
+                    if key.startswith("net") and "ip=" in str(value):
+                        # Parse: name=eth0,bridge=vmbr0,ip=10.0.0.x/24
+                        for part in str(value).split(","):
+                            if part.startswith("ip="):
+                                ip = part.split("=")[1].split("/")[0]
+                                if ip and ip != "dhcp":
+                                    return ip
+            print(f"    WARNING: LXC {name} (VMID {vmid}) - no discoverable IP")
+            return None
+
+        return None
+
+    def discover_hypervisor_nodes(host, headers, nodes):
+        """Discover Proxmox hypervisor node management IPs"""
+        targets = []
+        for node_info in nodes:
+            node = node_info.get("node")
+            if not node:
+                continue
+
+            # Query node network interfaces
+            net_data = query_proxmox(host, f"/nodes/{node}/network", headers)
+            if not isinstance(net_data, list):
+                print(f"    WARNING: Could not get network info for hypervisor {node}")
+                continue
+
+            node_ip = None
+            for iface in net_data:
+                if not isinstance(iface, dict):
+                    continue
+                # Look for interfaces with a homelab subnet address (typically vmbr0 or the management bridge)
+                address = iface.get("address", "")
+                if address and HOMELAB_SUBNET.match(address):
+                    node_ip = address
+                    break
+
+            if node_ip:
+                targets.append({
+                    "targets": [f"{node_ip}:{NODE_EXPORTER_PORT}"],
+                    "labels": {
+                        "name": node,
+                        "type": "hypervisor",
+                        "node": node
+                    }
+                })
+                print(f"    Found hypervisor: {node} ({node_ip})")
+            else:
+                print(f"    WARNING: Hypervisor {node} - no management IP in homelab subnet")
+
+        return targets
+
+    def discover_targets():
+        """Discover all VMs, LXCs, and hypervisor nodes from Proxmox"""
+        targets = []
+        hosts = get_proxmox_hosts()
+        headers = get_auth_header()
+
+        if not hosts:
+            print("No Proxmox hosts configured")
+            return targets
+
+        if not headers:
+            print("No Proxmox API credentials configured")
+            return targets
+
+        for host in hosts:
+            print(f"Querying {host}...")
+
+            # Get all nodes in cluster
+            nodes = query_proxmox(host, "/nodes", headers)
+
+            # Discover hypervisor nodes first
+            hypervisor_targets = discover_hypervisor_nodes(host, headers, nodes)
+            targets.extend(hypervisor_targets)
+
+            for node_info in nodes:
+                node = node_info.get("node")
+                if not node:
+                    continue
+
+                print(f"  Scanning node: {node}")
+
+                # Get VMs
+                vms = query_proxmox(host, f"/nodes/{node}/qemu", headers)
+                for vm in vms:
+                    if vm.get("status") != "running":
+                        continue
+
+                    vmid = vm.get("vmid")
+                    name = vm.get("name", f"vm-{vmid}")
+                    ip = get_vm_ip(host, headers, node, vmid, name, "qemu")
+
+                    if ip:
+                        targets.append({
+                            "targets": [f"{ip}:{NODE_EXPORTER_PORT}"],
+                            "labels": {
+                                "name": name,
+                                "vmid": str(vmid),
+                                "type": "qemu",
+                                "node": node
+                            }
+                        })
+                        print(f"    Found VM: {name} ({ip})")
+
+                # Get LXC containers
+                lxcs = query_proxmox(host, f"/nodes/{node}/lxc", headers)
+                for lxc in lxcs:
+                    if lxc.get("status") != "running":
+                        continue
+
+                    vmid = lxc.get("vmid")
+                    name = lxc.get("name", f"ct-{vmid}")
+                    ip = get_vm_ip(host, headers, node, vmid, name, "lxc")
+
+                    if ip:
+                        targets.append({
+                            "targets": [f"{ip}:{NODE_EXPORTER_PORT}"],
+                            "labels": {
+                                "name": name,
+                                "vmid": str(vmid),
+                                "type": "lxc",
+                                "node": node
+                            }
+                        })
+                        print(f"    Found LXC: {name} ({ip})")
+
+            # Only query first responsive host (cluster aware)
+            if targets:
+                break
+
+        return targets
+
+    def write_targets(targets):
+        """Write targets to file_sd JSON file"""
+        try:
+            with open(OUTPUT_FILE, "w") as f:
+                json.dump(targets, f, indent=2)
+            print(f"Wrote {len(targets)} targets to {OUTPUT_FILE}")
+        except Exception as e:
+            print(f"Error writing targets: {e}")
+
+    def main():
+        print("Proxmox Discovery starting...")
+        print(f"Discovery interval: {DISCOVERY_INTERVAL}s")
+        print(f"Output file: {OUTPUT_FILE}")
+
+        while True:
+            try:
+                targets = discover_targets()
+                write_targets(targets)
+            except Exception as e:
+                print(f"Discovery error: {e}")
+                # Write empty targets on error to not break Prometheus
+                write_targets([])
+
+            time.sleep(DISCOVERY_INTERVAL)
+
+    if __name__ == "__main__":
+        main()
+kind: ConfigMap
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"v1","data":{"discover.py":"#!/usr/bin/env python3 -u\n\"\"\"\nProxmox VM/LXC/Hypervisor Discovery for Prometheus\n\nQueries Proxmox API to discover running VMs, LXCs, and hypervisor nodes,\nextracts their IP addresses, and writes Prometheus file_sd targets.\n\"\"\"\n\nimport json\nimport os\nimport re\nimport sys\nimport time\nimport requests\nimport urllib3\n\n# Force unbuffered output\nsys.stdout.reconfigure(line_buffering=True)\nsys.stderr.reconfigure(line_buffering=True)\n\n# Disable SSL warnings for self-signed certs\nurllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)\n\nDISCOVERY_INTERVAL = 300  # 5 minutes\nOUTPUT_FILE = \"/etc/prometheus/file_sd/proxmox_targets.json\"\nNODE_EXPORTER_PORT = 9100\nHOMELAB_SUBNET = re.compile(r\"^192\\.168\\.50\\.\\d{1,3}$\")\n\ndef get_proxmox_hosts():\n    \"\"\"Parse comma-separated Proxmox hosts from env\"\"\"\n    hosts = os.environ.get(\"PROXMOX_HOSTS\", \"\")\n    return [h.strip() for h in hosts.split(\",\") if h.strip()]\n\ndef get_auth_header():\n    \"\"\"Build Proxmox API authentication header\"\"\"\n    token_id = os.environ.get(\"PROXMOX_TOKEN_ID\", \"\")\n    token_secret = os.environ.get(\"PROXMOX_TOKEN_SECRET\", \"\")\n    if not token_id or not token_secret:\n        return None\n    return {\"Authorization\": f\"PVEAPIToken={token_id}={token_secret}\"}\n\ndef query_proxmox(host, endpoint, headers):\n    \"\"\"Query Proxmox API endpoint\"\"\"\n    url = f\"{host}/api2/json{endpoint}\"\n    try:\n        response = requests.get(url, headers=headers, verify=False, timeout=10)\n        response.raise_for_status()\n        return response.json().get(\"data\", [])\n    except Exception as e:\n        print(f\"Error querying {url}: {e}\")\n        return []\n\ndef get_vm_ip(host, headers, node, vmid, name, vm_type):\n    \"\"\"Get IP address for a VM or LXC\"\"\"\n    if vm_type == \"qemu\":\n        # Try QEMU guest agent first - match any non-loopback interface with homelab IP\n        endpoint = f\"/nodes/{node}/qemu/{vmid}/agent/network-get-interfaces\"\n        data = query_proxmox(host, endpoint, headers)\n        # Guest agent returns {result: [...]} — unwrap if needed\n        if isinstance(data, dict):\n            data = data.get(\"result\", [])\n        if isinstance(data, list):\n            for iface in data:\n                if not isinstance(iface, dict):\n                    continue\n                iface_name = iface.get(\"name\", \"\")\n                # Skip loopback\n                if iface_name == \"lo\":\n                    continue\n                for addr in iface.get(\"ip-addresses\", []):\n                    if isinstance(addr, dict) and addr.get(\"ip-address-type\") == \"ipv4\":\n                        ip = addr.get(\"ip-address\")\n                        if ip and HOMELAB_SUBNET.match(ip):\n                            return ip\n\n        # Fallback: parse cloud-init ipconfig0 from VM config\n        config_endpoint = f\"/nodes/{node}/qemu/{vmid}/config\"\n        config_data = query_proxmox(host, config_endpoint, headers)\n        if isinstance(config_data, dict):\n            ipconfig0 = config_data.get(\"ipconfig0\", \"\")\n            if ipconfig0:\n                # Parse: ip=10.0.0.x/24,gw=10.0.0.1\n                for part in str(ipconfig0).split(\",\"):\n                    if part.startswith(\"ip=\"):\n                        ip = part.split(\"=\")[1].split(\"/\")[0]\n                        if ip and HOMELAB_SUBNET.match(ip):\n                            print(f\"    WARNING: {name} (VMID {vmid}) - using cloud-init IP (no guest agent)\")\n                            return ip\n\n        print(f\"    WARNING: VM {name} (VMID {vmid}) - no discoverable IP via guest agent or cloud-init\")\n        return None\n\n    elif vm_type == \"lxc\":\n        # Get LXC config for network\n        endpoint = f\"/nodes/{node}/lxc/{vmid}/config\"\n        data = query_proxmox(host, endpoint, headers)\n        if isinstance(data, dict):\n            for key, value in data.items():\n                if key.startswith(\"net\") and \"ip=\" in str(value):\n                    # Parse: name=eth0,bridge=vmbr0,ip=10.0.0.x/24\n                    for part in str(value).split(\",\"):\n                        if part.startswith(\"ip=\"):\n                            ip = part.split(\"=\")[1].split(\"/\")[0]\n                            if ip and ip != \"dhcp\":\n                                return ip\n        print(f\"    WARNING: LXC {name} (VMID {vmid}) - no discoverable IP\")\n        return None\n\n    return None\n\ndef discover_hypervisor_nodes(host, headers, nodes):\n    \"\"\"Discover Proxmox hypervisor node management IPs\"\"\"\n    targets = []\n    for node_info in nodes:\n        node = node_info.get(\"node\")\n        if not node:\n            continue\n\n        # Query node network interfaces\n        net_data = query_proxmox(host, f\"/nodes/{node}/network\", headers)\n        if not isinstance(net_data, list):\n            print(f\"    WARNING: Could not get network info for hypervisor {node}\")\n            continue\n\n        node_ip = None\n        for iface in net_data:\n            if not isinstance(iface, dict):\n                continue\n            # Look for interfaces with a homelab subnet address (typically vmbr0 or the management bridge)\n            address = iface.get(\"address\", \"\")\n            if address and HOMELAB_SUBNET.match(address):\n                node_ip = address\n                break\n\n        if node_ip:\n            targets.append({\n                \"targets\": [f\"{node_ip}:{NODE_EXPORTER_PORT}\"],\n                \"labels\": {\n                    \"name\": node,\n                    \"type\": \"hypervisor\",\n                    \"node\": node\n                }\n            })\n            print(f\"    Found hypervisor: {node} ({node_ip})\")\n        else:\n            print(f\"    WARNING: Hypervisor {node} - no management IP in homelab subnet\")\n\n    return targets\n\ndef discover_targets():\n    \"\"\"Discover all VMs, LXCs, and hypervisor nodes from Proxmox\"\"\"\n    targets = []\n    hosts = get_proxmox_hosts()\n    headers = get_auth_header()\n\n    if not hosts:\n        print(\"No Proxmox hosts configured\")\n        return targets\n\n    if not headers:\n        print(\"No Proxmox API credentials configured\")\n        return targets\n\n    for host in hosts:\n        print(f\"Querying {host}...\")\n\n        # Get all nodes in cluster\n        nodes = query_proxmox(host, \"/nodes\", headers)\n\n        # Discover hypervisor nodes first\n        hypervisor_targets = discover_hypervisor_nodes(host, headers, nodes)\n        targets.extend(hypervisor_targets)\n\n        for node_info in nodes:\n            node = node_info.get(\"node\")\n            if not node:\n                continue\n\n            print(f\"  Scanning node: {node}\")\n\n            # Get VMs\n            vms = query_proxmox(host, f\"/nodes/{node}/qemu\", headers)\n            for vm in vms:\n                if vm.get(\"status\") != \"running\":\n                    continue\n\n                vmid = vm.get(\"vmid\")\n                name = vm.get(\"name\", f\"vm-{vmid}\")\n                ip = get_vm_ip(host, headers, node, vmid, name, \"qemu\")\n\n                if ip:\n                    targets.append({\n                        \"targets\": [f\"{ip}:{NODE_EXPORTER_PORT}\"],\n                        \"labels\": {\n                            \"name\": name,\n                            \"vmid\": str(vmid),\n                            \"type\": \"qemu\",\n                            \"node\": node\n                        }\n                    })\n                    print(f\"    Found VM: {name} ({ip})\")\n\n            # Get LXC containers\n            lxcs = query_proxmox(host, f\"/nodes/{node}/lxc\", headers)\n            for lxc in lxcs:\n                if lxc.get(\"status\") != \"running\":\n                    continue\n\n                vmid = lxc.get(\"vmid\")\n                name = lxc.get(\"name\", f\"ct-{vmid}\")\n                ip = get_vm_ip(host, headers, node, vmid, name, \"lxc\")\n\n                if ip:\n                    targets.append({\n                        \"targets\": [f\"{ip}:{NODE_EXPORTER_PORT}\"],\n                        \"labels\": {\n                            \"name\": name,\n                            \"vmid\": str(vmid),\n                            \"type\": \"lxc\",\n                            \"node\": node\n                        }\n                    })\n                    print(f\"    Found LXC: {name} ({ip})\")\n\n        # Only query first responsive host (cluster aware)\n        if targets:\n            break\n\n    return targets\n\ndef write_targets(targets):\n    \"\"\"Write targets to file_sd JSON file\"\"\"\n    try:\n        with open(OUTPUT_FILE, \"w\") as f:\n            json.dump(targets, f, indent=2)\n        print(f\"Wrote {len(targets)} targets to {OUTPUT_FILE}\")\n    except Exception as e:\n        print(f\"Error writing targets: {e}\")\n\ndef main():\n    print(\"Proxmox Discovery starting...\")\n    print(f\"Discovery interval: {DISCOVERY_INTERVAL}s\")\n    print(f\"Output file: {OUTPUT_FILE}\")\n\n    while True:\n        try:\n            targets = discover_targets()\n            write_targets(targets)\n        except Exception as e:\n            print(f\"Discovery error: {e}\")\n            # Write empty targets on error to not break Prometheus\n            write_targets([])\n\n        time.sleep(DISCOVERY_INTERVAL)\n\nif __name__ == \"__main__\":\n    main()\n"},"kind":"ConfigMap","metadata":{"annotations":{},"creationTimestamp":null,"name":"proxmox-discovery-script","namespace":"monitoring"}}
+  creationTimestamp: "2026-01-05T08:10:15Z"
+  name: proxmox-discovery-script
+  namespace: monitoring
+  resourceVersion: "29162598"
+  uid: 6f79e60c-25b8-4816-87b6-7349e1f8b30f

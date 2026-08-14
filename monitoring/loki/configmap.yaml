@@ -1,0 +1,45 @@
+apiVersion: v1
+data:
+  loki.yaml: "auth_enabled: false\n\nserver:\n  http_listen_port: 3100\n  grpc_listen_port:\
+    \ 9096\n  log_level: warn\n\ncommon:\n  path_prefix: /loki\n  storage:\n    filesystem:\n\
+    \      chunks_directory: /loki/chunks\n      rules_directory: /loki/rules\n  replication_factor:\
+    \ 1\n  ring:\n    kvstore:\n      store: inmemory\n\nschema_config:\n  configs:\n\
+    \    - from: \"2024-01-01\"\n      store: tsdb\n      object_store: filesystem\n\
+    \      schema: v13\n      index:\n        prefix: index_\n        period: 24h\n\
+    \nstorage_config:\n  filesystem:\n    directory: /loki/chunks\n  tsdb_shipper:\n\
+    \    active_index_directory: /loki/tsdb-index\n    cache_location: /loki/tsdb-cache\n\
+    \nlimits_config:\n  retention_period: 30d\n  max_query_series: 500\n  max_query_lookback:\
+    \ 30d\n  ingestion_rate_mb: 10\n  ingestion_burst_size_mb: 20\n  per_stream_rate_limit:\
+    \ 5MB\n  per_stream_rate_limit_burst: 15MB\n\ncompactor:\n  working_directory:\
+    \ /loki/compactor\n  compaction_interval: 10m\n  retention_enabled: true\n  retention_delete_delay:\
+    \ 2h\n  delete_request_store: filesystem\n\nruler:\n  storage:\n    type: local\n\
+    \    local:\n      directory: /loki/rules\n  rule_path: /loki/scratch\n  alertmanager_url:\
+    \ http://alertmanager:9093\n  ring:\n    kvstore:\n      store: inmemory\n  enable_api:\
+    \ true\n\nanalytics:\n  reporting_enabled: false\n"
+  rules.yml: "groups:\n  - name: security\n    interval: 1m\n    rules:\n      - alert:\
+    \ SSHBruteForceAttempt\n        expr: |\n          count_over_time({job=~\"varlogs|systemd-journal|auth\"\
+    } |= \"Failed password\"[5m]) > 5\n        for: 1m\n        labels:\n        \
+    \  severity: warning\n        annotations:\n          summary: \"SSH brute force\
+    \ detected on {{ $labels.host }}\"\n          description: \"More than 5 failed\
+    \ SSH password attempts in 5 minutes on {{ $labels.host }}\"\n\n      - alert:\
+    \ SSHRootLoginAttempt\n        expr: |\n          count_over_time({job=~\"varlogs|systemd-journal|auth\"\
+    } |~ \"Failed password for root\"[5m]) > 0\n        for: 1m\n        labels:\n\
+    \          severity: critical\n        annotations:\n          summary: \"SSH\
+    \ root login attempts on {{ $labels.host }}\"\n          description: \"Failed\
+    \ root login attempts detected on {{ $labels.host }}\"\n\n  - name: containers\n\
+    \    interval: 1m\n    rules:\n      - alert: DockerContainerOOMKilled\n     \
+    \   expr: |\n          count_over_time({job=\"docker\"} |= \"OOMKilled\"[5m])\
+    \ > 0\n        for: 0m\n        labels:\n          severity: critical\n      \
+    \  annotations:\n          summary: \"Docker container OOM killed on {{ $labels.host\
+    \ }}\"\n          description: \"A Docker container was killed due to out of memory\
+    \ on {{ $labels.host }}\"\n\n  - name: filesystem\n    interval: 1m\n    rules:\n\
+    \      - alert: NFSMountFailure\n        expr: |\n          count_over_time({job=~\"\
+    syslog|systemd-journal\"} |~ \"mount.*failed|nfs.*stale file handle|rpc.*timed\
+    \ out\"[10m]) > 10\n        for: 5m\n        labels:\n          severity: critical\n\
+    \        annotations:\n          summary: \"Kernel NFS mount errors on {{ $labels.host\
+    \ }}\"\n          description: \"More than 10 kernel-level NFS errors in 10 minutes\
+    \ on {{ $labels.host }}\"\n"
+kind: ConfigMap
+metadata:
+  name: loki-config
+  namespace: monitoring

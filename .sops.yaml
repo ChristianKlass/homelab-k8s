@@ -1,0 +1,10 @@
+# sops config for the homelab/k8s repo.
+# Files named *.sops.yaml (e.g. SopsSecret CRs) encrypt only their data/stringData
+# values with the cluster age recipient below. The matching age PRIVATE key lives in
+# the in-cluster `sops-age` Secret (sops-secrets-operator-system) and in the user's
+# age keystore — it is NOT in this repo. Editing/creating these files requires the
+# private key (a user-run step); this public recipient is all that's needed here.
+creation_rules:
+  - path_regex: \.sops\.ya?ml$
+    encrypted_regex: ^(stringData|data)$
+    age: age13486e9ss59pff6l0y6ktzxmp3sgwypxeyfpku2jl3jcxnd4lt35qgq8ktl

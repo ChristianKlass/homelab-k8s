@@ -1,0 +1,31 @@
+# Per-app image scanning + selection for the resume site, kept in flux-system next to
+# the shared ImageUpdateAutomation (image-automation.yaml). Mirrors images-kopilog.yaml.
+# The $imagepolicy setter resolves the policy in the automation's own namespace, so the
+# policy lives here (not in the resume namespace) and the marker reads
+# `# {"$imagepolicy": "flux-system:resume"}`. Reuses the flux-system gitlab-registry
+# pull secret for the registry scan.
+apiVersion: image.toolkit.fluxcd.io/v1
+kind: ImageRepository
+metadata:
+  name: resume
+  namespace: flux-system
+spec:
+  image: registry.markklass.dev/markklass/resume
+  interval: 5m
+  secretRef:
+    name: gitlab-registry
+---
+apiVersion: image.toolkit.fluxcd.io/v1
+kind: ImagePolicy
+metadata:
+  name: resume
+  namespace: flux-system
+spec:
+  imageRepositoryRef:
+    name: resume
+  filterTags:
+    pattern: '^main-(?P<ts>[0-9]+)-[0-9a-f]+$'
+    extract: '$ts'
+  policy:
+    numerical:
+      order: asc

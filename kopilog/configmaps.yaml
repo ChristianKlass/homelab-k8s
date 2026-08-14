@@ -1,0 +1,46 @@
+apiVersion: v1
+data:
+  CLAUDE_PROXY_URL: http://10.0.0.99:9191/
+  CLUSTER_DISTANCE_THRESHOLD: '0.55'
+  GEMINI_PROXY_URL: http://10.0.0.99:9192/
+  KOPILOG_DATA_DIR: /data
+  KOPILOG_FEEDS_FILE: /config/feeds.yaml
+  KOPILOG_LOG_LEVEL: INFO
+  LLM_BACKEND: claude
+  LLM_BACKOFF_BASE: '5'
+  LLM_MAX_RETRIES: '3'
+  LLM_TIMEOUT: '170'
+  MAX_ARTICLES_PER_RUN: '5'
+  MIN_AI_PER_RUN: '2'
+  MIN_CLUSTER_SIZE: '2'
+  RUN_WINDOW_HOURS: '72'
+  SITE_DIR: /app/site
+kind: ConfigMap
+metadata:
+  name: kopilog-config
+  namespace: kopilog
+---
+apiVersion: v1
+data:
+  feeds.yaml: "tunables:\n  max_articles_per_run: 5\n  run_window_hours: 72\n  min_cluster_size:\
+    \ 2\n  cluster_distance_threshold: 0.55\n  min_ai_per_run: 2\nfeeds:\n  - { category:\
+    \ ai, name: \"Simon Willison\", url: \"https://simonwillison.net/atom/everything/\"\
+    \ }\n  - { category: ai, name: \"MarkTechPost\", url: \"https://www.marktechpost.com/feed/\"\
+    \ }\n  - { category: ai, name: \"Hugging Face Blog\", url: \"https://huggingface.co/blog/feed.xml\"\
+    \ }\n  - { category: ai, name: \"Google DeepMind Blog\", url: \"https://deepmind.google/blog/rss.xml\"\
+    \ }\n  - { category: ai, name: \"The Verge \u2014 AI\", url: \"https://www.theverge.com/rss/ai-artificial-intelligence/index.xml\"\
+    \ }\n  - { category: ai, name: \"VentureBeat \u2014 AI\", url: \"https://venturebeat.com/category/ai/feed/\"\
+    \ }\n  - { category: gaming, name: \"Polygon\", url: \"https://www.polygon.com/rss/index.xml\"\
+    \ }\n  - { category: gaming, name: \"Rock Paper Shotgun\", url: \"https://www.rockpapershotgun.com/feed\"\
+    \ }\n  - { category: gaming, name: \"PC Gamer\", url: \"https://www.pcgamer.com/rss/\"\
+    \ }\n  - { category: gaming, name: \"Eurogamer\", url: \"https://www.eurogamer.net/feed\"\
+    \ }\n  - { category: gaming, name: \"IGN\", url: \"https://feeds.ign.com/ign/all\"\
+    \ }\n  - { category: releases, name: \"TechCrunch\", url: \"https://techcrunch.com/feed/\"\
+    \ }\n  - { category: releases, name: \"Tom's Hardware\", url: \"https://www.tomshardware.com/feeds/all\"\
+    \ }\n  - { category: releases, name: \"The Register\", url: \"https://www.theregister.com/headlines.atom\"\
+    \ }\n  - { category: releases, name: \"Engadget\", url: \"https://www.engadget.com/rss.xml\"\
+    \ }\n"
+kind: ConfigMap
+metadata:
+  name: kopilog-feeds
+  namespace: kopilog

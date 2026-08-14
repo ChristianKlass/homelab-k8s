@@ -1,0 +1,29 @@
+# Image scanning + selection for hadash (bespoke HA frontend). Lives in
+# flux-system next to the shared ImageUpdateAutomation — the $imagepolicy
+# setter only resolves policies in the automation's own namespace. The marker
+# in hadash/deployment.yaml reads `# {"$imagepolicy": "flux-system:hadash"}`.
+apiVersion: image.toolkit.fluxcd.io/v1
+kind: ImageRepository
+metadata:
+  name: hadash
+  namespace: flux-system
+spec:
+  image: registry.markklass.dev/markklass/hadash
+  interval: 5m
+  secretRef:
+    name: gitlab-registry
+---
+apiVersion: image.toolkit.fluxcd.io/v1
+kind: ImagePolicy
+metadata:
+  name: hadash
+  namespace: flux-system
+spec:
+  imageRepositoryRef:
+    name: hadash
+  filterTags:
+    pattern: '^main-(?P<ts>[0-9]+)-[0-9a-f]+$'
+    extract: '$ts'
+  policy:
+    numerical:
+      order: asc

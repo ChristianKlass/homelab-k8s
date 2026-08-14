@@ -1,0 +1,25 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    ":dependencyDashboard",
+    ":semanticCommits",
+    "group:allNonMajor",
+    "group:monorepos"
+  ],
+  "minimumReleaseAge": "7 days",
+  "packageRules": [
+    {
+      "description": "Ignore images from internal private registries (self-built)",
+      "matchPackagePatterns": [
+        "^192\\.168\\.50\\.17:5050/"
+      ],
+      "enabled": false
+    },
+    {
+      "description": "Group all major updates per package",
+      "matchUpdateTypes": ["major"],
+      "commitMessagePrefix": "chore(deps-major):"
+    }
+  ]
+}

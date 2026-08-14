@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    metallb.universe.tf/loadBalancerIPs: 10.0.0.103
+  labels:
+    app: ramesh-portfolio
+  name: ramesh-portfolio
+  namespace: ramesh-portfolio
+spec:
+  type: LoadBalancer
+  externalTrafficPolicy: Cluster
+  selector:
+    app: ramesh-portfolio
+  ports:
+  - name: http
+    port: 80
+    protocol: TCP
+    targetPort: 80

@@ -1,0 +1,315 @@
+# Site-freshness probe + SELF-HEALER for The Kopi Log.
+#
+# Runs every 30m. If a scheduled MWF 18:00 SGT publish slot was missed (live
+# site's newest post older than the last elapsed slot) AND the claude backend is
+# healthy again, it auto-creates a catch-up pipeline Job — so an outage that
+# needed a manual `claude` re-auth recovers on its own instead of waiting up to
+# two days for the next MWF cron. See configs#8 / gateway claude-proxy for the
+# backend-down alerting that pairs with this. RBAC is namespace-scoped and can
+# only create Jobs (get cronjobs; get/list/create jobs) — it cannot touch
+# Deployments, unlike the deployer RBAC removed in kopilog 6f15e45.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kopilog-probe
+  namespace: kopilog
+  labels:
+    app: kopilog
+    component: freshness-probe
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: kopilog-probe
+  namespace: kopilog
+  labels:
+    app: kopilog
+    component: freshness-probe
+rules:
+  - apiGroups: ["batch"]
+    resources: ["cronjobs"]
+    verbs: ["get"]
+  - apiGroups: ["batch"]
+    resources: ["jobs"]
+    verbs: ["get", "list", "create"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: kopilog-probe
+  namespace: kopilog
+  labels:
+    app: kopilog
+    component: freshness-probe
+subjects:
+  - kind: ServiceAccount
+    name: kopilog-probe
+    namespace: kopilog
+roleRef:
+  kind: Role
+  name: kopilog-probe
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kopilog-freshness-probe
+  namespace: kopilog
+  labels:
+    app: kopilog
+    component: freshness-probe
+data:
+  probe.py: |
+    """Site-freshness probe + self-healer for The Kopi Log.
+
+    Runs every 30m. Detects when a scheduled MWF 18:00 SGT publish slot was missed
+    (the live site's newest post is older than the most recent elapsed slot) and, if
+    the claude backend is healthy again, AUTO-TRIGGERS a catch-up pipeline run — so an
+    outage that needed a manual `claude` re-auth recovers on its own instead of
+    waiting up to two days for the next MWF cron.
+
+    Alerting is deliberately narrow to avoid spam at 30m cadence:
+      - backend down  -> QUIET here (claude-proxy owns that alert).
+      - acted (triggered a catch-up) -> one green "self-healed" ping.
+      - stale despite a healthy backend AND a completed recent catch-up -> red
+        "deploy stuck" (CI build / Flux rollout is the real problem).
+      - site unreachable / no dates -> red (web tier broken).
+    """
+    import datetime
+    import json
+    import os
+    import re
+    import ssl
+    import urllib.request
+
+    SITE = os.environ["SITE_URL"]
+    WEBHOOK = os.environ["NOTIFY_WEBHOOK_URL"]
+    CLAUDE_HEALTH_URL = os.environ.get("CLAUDE_HEALTH_URL", "http://10.0.0.99:9191/health")
+    PIPELINE_CRONJOB = os.environ.get("PIPELINE_CRONJOB", "kopilog-pipeline")
+    NAMESPACE = os.environ.get("NAMESPACE", "kopilog")
+    CATCHUP_COOLDOWN_MIN = int(os.environ.get("CATCHUP_COOLDOWN_MIN", "360"))
+    DRYRUN = bool(os.environ.get("PROBE_DRYRUN"))
+    FORCE_STALE = bool(os.environ.get("PROBE_FORCE_STALE"))  # test hook
+
+    MWF = {0, 2, 4}  # Mon, Wed, Fri
+    SLOT_HOUR = 18
+    K8S = "https://kubernetes.default.svc"
+    SA = "/var/run/secrets/kubernetes.io/serviceaccount"
+
+
+    # ---------- pure logic (unit-tested) ----------
+    def last_elapsed_slot(now):
+        """Most recent MWF 18:00 at or before `now` (naive local = SGT)."""
+        for back in range(8):
+            day = (now - datetime.timedelta(days=back)).date()
+            if day.weekday() in MWF:
+                slot = datetime.datetime.combine(day, datetime.time(SLOT_HOUR))
+                if slot <= now:
+                    return slot
+        return None
+
+
+    def catch_up_needed(newest_date, now):
+        slot = last_elapsed_slot(now)
+        return slot is not None and newest_date < slot.date()
+
+
+    def classify_jobs(jobs, now_utc):
+        """-> (active, recent_catchup). active: a pipeline run in flight.
+        recent_catchup: a catch-up Job created within the cooldown window."""
+        active = recent_catchup = False
+        for j in jobs:
+            if (j.get("status") or {}).get("active", 0):
+                active = True
+            name = j.get("metadata", {}).get("name", "")
+            ts = j.get("metadata", {}).get("creationTimestamp")
+            if name.startswith("kopilog-catchup-") and ts:
+                created = datetime.datetime.strptime(ts, "%Y-%m-%dT%H:%M:%SZ").replace(
+                    tzinfo=datetime.timezone.utc)
+                if (now_utc - created).total_seconds() < CATCHUP_COOLDOWN_MIN * 60:
+                    recent_catchup = True
+        return active, recent_catchup
+
+
+    def decide(stale, claude_ok, active, recent_catchup):
+        """-> one of: ok | backend_down | in_flight | deploy_stuck | trigger."""
+        if not stale:
+            return "ok"
+        if not claude_ok:
+            return "backend_down"
+        if active:
+            return "in_flight"
+        if recent_catchup:
+            return "deploy_stuck"
+        return "trigger"
+
+
+    # ---------- IO ----------
+    def alert(message, title="kopilog self-healer", color="red"):
+        body = json.dumps({"title": title, "message": message, "color": color,
+                           "hostname": "kopilog-probe"}).encode()
+        try:
+            req = urllib.request.Request(WEBHOOK, data=body,
+                                         headers={"Content-Type": "application/json"})
+            urllib.request.urlopen(req, timeout=15).read()
+        except Exception as e:  # noqa: BLE001
+            print(f"ALERT_FAILED: {e}")
+
+
+    def _k8s(path, method="GET", body=None):
+        ctx = ssl.create_default_context(cafile=f"{SA}/ca.crt")
+        with open(f"{SA}/token") as f:
+            token = f.read().strip()
+        headers = {"Authorization": f"Bearer {token}"}
+        data = None
+        if body is not None:
+            data = json.dumps(body).encode()
+            headers["Content-Type"] = "application/json"
+        req = urllib.request.Request(f"{K8S}{path}", data=data, headers=headers, method=method)
+        with urllib.request.urlopen(req, timeout=15, context=ctx) as r:
+            return json.load(r)
+
+
+    def pipeline_jobs():
+        path = f"/apis/batch/v1/namespaces/{NAMESPACE}/jobs?labelSelector=component%3Dpipeline"
+        return _k8s(path).get("items", [])
+
+
+    def trigger_catchup():
+        cj = _k8s(f"/apis/batch/v1/namespaces/{NAMESPACE}/cronjobs/{PIPELINE_CRONJOB}")
+        job = {
+            "apiVersion": "batch/v1", "kind": "Job",
+            "metadata": {
+                "generateName": "kopilog-catchup-", "namespace": NAMESPACE,
+                "labels": {"app": "kopilog", "component": "pipeline", "trigger": "catchup"},
+            },
+            "spec": cj["spec"]["jobTemplate"]["spec"],
+        }
+        if DRYRUN:
+            print("DRYRUN: would create catch-up Job from cronjob/" + PIPELINE_CRONJOB)
+            return "dryrun-not-created"
+        return _k8s(f"/apis/batch/v1/namespaces/{NAMESPACE}/jobs", "POST", job)["metadata"]["name"]
+
+
+    def claude_healthy():
+        try:
+            with urllib.request.urlopen(CLAUDE_HEALTH_URL, timeout=10) as r:
+                return bool(json.load(r).get("healthy"))
+        except Exception as e:  # noqa: BLE001
+            print(f"CLAUDE_HEALTH_UNKNOWN: {e}")
+            return False
+
+
+    def main():
+        now = datetime.datetime.now()  # SGT via TZ env
+        now_utc = datetime.datetime.now(datetime.timezone.utc)
+
+        try:
+            html = urllib.request.urlopen(SITE, timeout=15).read().decode("utf-8", "replace")
+        except Exception as exc:  # noqa: BLE001
+            alert(f"Freshness probe could not reach {SITE}: {exc}. Web tier may be down.",
+                  title="kopilog site unreachable")
+            print(f"UNREACHABLE: {exc}")
+            return
+        dates = re.findall(r"\b(20\d{2}-\d{2}-\d{2})\b", html)
+        if not dates:
+            alert(f"Freshness probe found no post dates on {SITE} — site may be broken.",
+                  title="kopilog site broken")
+            print("NO_DATES")
+            return
+
+        newest = max(dates)
+        stale = FORCE_STALE or catch_up_needed(datetime.date.fromisoformat(newest), now)
+        if not stale:
+            print(f"OK: newest={newest}")
+            return
+
+        claude_ok = claude_healthy()
+        active = recent_catchup = False
+        if claude_ok:
+            try:
+                active, recent_catchup = classify_jobs(pipeline_jobs(), now_utc)
+            except Exception as e:  # noqa: BLE001 — treat API failure as "don't trigger"
+                print(f"K8S_LIST_FAILED: {e}")
+                active = True  # fail safe: do not spawn if we can't check for overlap
+
+        action = decide(stale, claude_ok, active, recent_catchup)
+        print(f"DECISION={action} newest={newest} claude_ok={claude_ok} "
+              f"active={active} recent_catchup={recent_catchup}")
+
+        if action == "backend_down":
+            print("claude backend down — claude-proxy owns this alert; staying quiet")
+        elif action == "in_flight":
+            print("a pipeline run is already active; letting it finish")
+        elif action == "deploy_stuck":
+            alert(f"Site still stale (newest={newest}) after a recent catch-up run, but the "
+                  f"claude backend is healthy — the DEPLOY chain (CI build / Flux rollout) is "
+                  f"likely broken. Check `glab ci list` and Flux.", title="kopilog deploy stuck")
+        elif action == "trigger":
+            try:
+                name = trigger_catchup()
+            except Exception as e:  # noqa: BLE001
+                alert(f"Site stale (newest={newest}) and claude healthy, but auto catch-up FAILED "
+                      f"to start: {e}. Manual: kubectl create job -n {NAMESPACE} "
+                      f"--from=cronjob/{PIPELINE_CRONJOB} kopilog-catchup-manual",
+                      title="kopilog self-heal failed")
+                print(f"TRIGGER_FAILED: {e}")
+                return
+            alert(f"Site was stale (newest={newest}, missed an MWF slot) and claude recovered — "
+                  f"auto-triggered catch-up run {name}. Content should publish within ~15m.",
+                  title="kopilog self-healed", color="green")
+            print(f"TRIGGERED: {name}")
+
+
+    if __name__ == "__main__":
+        main()
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: kopilog-freshness-probe
+  namespace: kopilog
+  labels:
+    app: kopilog
+    component: freshness-probe
+spec:
+  schedule: "*/30 * * * *"
+  timeZone: Asia/Singapore
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: OnFailure
+          serviceAccountName: kopilog-probe
+          containers:
+            - name: probe
+              image: python:3.12-alpine
+              imagePullPolicy: IfNotPresent
+              command: ["python3", "/probe/probe.py"]
+              env:
+                - name: SITE_URL
+                  value: "http://kopilog-web.kopilog.svc.cluster.local"
+                - name: NOTIFY_WEBHOOK_URL
+                  value: "http://10.0.0.110/webhook/notify"
+                - name: CLAUDE_HEALTH_URL
+                  value: "http://10.0.0.99:9191/health"
+                - name: TZ
+                  value: "Asia/Singapore"
+              resources:
+                requests:
+                  cpu: "10m"
+                  memory: "32Mi"
+                limits:
+                  cpu: "100m"
+                  memory: "64Mi"
+              volumeMounts:
+                - name: script
+                  mountPath: /probe
+          volumes:
+            - name: script
+              configMap:
+                name: kopilog-freshness-probe
+                defaultMode: 0755
